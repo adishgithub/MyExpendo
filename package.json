@@ -7,7 +7,7 @@
     "dev": "concurrently \"nodemon backend/server.js\" \"vite web\"",
     "server": "nodemon backend/server.js",
     "client": "vite web",
-    "build": "vite build web",
+    "build": "npx vite build web",
     "preview": "vite preview web",
     "lint": "eslint web/src"
   },
