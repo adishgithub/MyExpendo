@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import API from '../utils/api'
 import Input from '../components/Input'
 import Button from '../components/Button'
 import HeroPanel from '../components/HeroPanel'
