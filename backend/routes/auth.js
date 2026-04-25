@@ -78,20 +78,41 @@ const generateToken = (id) => {
 router.put('/update', async (req, res) => {
     const { username, full_name, email, phone, _id } = req.body;
     try {
-        // user and email uniqueness checks
-        if (username || email) {
-            const existingUser = await UserLoginList.findOne({ username, email, _id: { $ne: _id } });
-            if (existingUser) {
-                return res.status(400).json({ success: false, message: 'Username or email already exists' });
+        // Check username taken by someone ELSE
+        if (username) {
+            const existingUsername = await UserLoginList.findOne({ 
+                username, 
+                _id: { $ne: _id } 
+            });
+            if (existingUsername) {
+                return res.status(400).json({ success: false, message: 'Username already taken' });
             }
         }
+
+        // Check email taken by someone ELSE
+        if (email) {
+            const existingEmail = await UserLoginList.findOne({ 
+                email, 
+                _id: { $ne: _id } 
+            });
+            if (existingEmail) {
+                return res.status(400).json({ success: false, message: 'Email already in use' });
+            }
+        }
+
         // Update user details
         const updatedUser = await UserLoginList.findByIdAndUpdate(
             _id,
             { username, full_name, email, phone },
-            { returnDocument: 'after', runValidators: true }
+            { new: true, runValidators: true }
         );
-        return res.status(200).json({ success: true, message: 'User details updated successfully', user: updatedUser });
+
+        return res.status(200).json({ 
+            success: true, 
+            message: 'User details updated successfully', 
+            user: updatedUser 
+        });
+
     } catch (error) {
         console.error('Update error:', error);
         return res.status(500).json({ success: false, message: 'Error occurred during user update', error: error.message });
