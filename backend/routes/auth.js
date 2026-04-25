@@ -57,7 +57,7 @@ router.post('/login', async (req, res) => {
         }
         const token = generateToken(user._id);
 
-        return res.status(200).json({ success: true, message: 'User logged in successfully', user: { user_id: user.user_id, username: user.username, full_name: user.full_name, email: user.email }, token });
+        return res.status(200).json({ success: true, message: 'User logged in successfully', user: { user_id: user.user_id, username: user.username, full_name: user.full_name, email: user.email, phone: user.phone, createdAt: user.createdAt }, token });
     } catch (error) {
         console.error('Login error:', error);
         return res.status(500).json({ success: false, message: 'Error occurred during login', error: error.message });

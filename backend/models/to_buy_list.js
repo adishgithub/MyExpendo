@@ -1,38 +1,45 @@
 const mongoose = require('mongoose');
 
 const toBuyListSchema = new mongoose.Schema({
-    item_name: {
+    user_id: {
         type: String,
         required: true,
     },
+    item_id: {
+        type: String,
+        required: true
+    },
+    item_name: {
+        type: String,
+        required: false,
+    },
     product_category_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'product_category_list',
-        required: true,
+        type: String,
+        required: false,
     },
     priority_point: {
         type: Number,
-        required: true,
+        required: false,
     },
     status: {
         type: String,
-        required: true,
+        required: false,
     },
     expected_price: {
         type: Number,
-        required: true,
+        required: false,
     },
     actual_price: {
         type: Number,
-        required: true,
+        required: false,
     },
     added_date: {
         type: Date,
-        required: true,
+        required: false,
     },
     bought_date: {
         type: Date,
-        required: true,
+        required: false,
     },
 });
 

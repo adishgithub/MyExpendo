@@ -63,25 +63,41 @@ router.get('/list', async (req, res) => {
         const pipeline = [
             { $match: matchStage },
 
-            // Join category collection
+            // Join expense_category_lists first
             {
                 $lookup: {
-                    from: 'expense_category_lists',  // MongoDB collection name
+                    from: 'expense_category_lists',
                     localField: 'expense_category_id',
                     foreignField: 'expense_category_id',
-                    as: 'category',
+                    as: 'expense_category',
                 }
             },
 
-            // Flatten the joined array to a single object
+            // Fallback: join product_category_lists for expenses synced from buy list
+            {
+                $lookup: {
+                    from: 'product_category_lists',
+                    localField: 'expense_category_id',
+                    foreignField: 'product_category_id',
+                    as: 'product_category',
+                }
+            },
+
+            // Use expense category name if found, otherwise fall back to product category name
             {
                 $addFields: {
-                    expense_category_name: { $arrayElemAt: ['$category.expense_category_name', 0] }
+                    expense_category_name: {
+                        $cond: {
+                            if: { $gt: [{ $size: '$expense_category' }, 0] },
+                            then: { $arrayElemAt: ['$expense_category.expense_category_name', 0] },
+                            else: { $arrayElemAt: ['$product_category.product_category_name', 0] },
+                        }
+                    }
                 }
             },
 
-            // Remove the raw joined array
-            { $project: { category: 0, __v: 0 } },
+            // Remove the raw joined arrays
+            { $project: { expense_category: 0, product_category: 0, __v: 0 } },
 
             // Search across description, category name, amount
             ...(search ? [{

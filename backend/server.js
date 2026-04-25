@@ -43,6 +43,7 @@ const productCategoryRoutes = require('./routes/product_category_routes');
 const serviceCategoryRoutes = require('./routes/service_category_routes');
 const incomeListRoutes = require('./routes/income_routes');
 const expenseListRoutes = require('./routes/expense_routes');
+const toBuyRoutes = require('./routes/to_buy_routes');
 
 // Use routes
 app.use('/api/user', authRoutes);
@@ -52,5 +53,6 @@ app.use('/api/productCategory', productCategoryRoutes);
 app.use('/api/serviceCategory', serviceCategoryRoutes);
 app.use('/api/incomeList', incomeListRoutes);
 app.use('/api/expenseList', expenseListRoutes);
+app.use('/api/toBuyList/', toBuyRoutes);
 
 

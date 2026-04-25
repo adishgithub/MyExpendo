@@ -9,7 +9,7 @@ import Account from './pages/Account'
 import Categories from './pages/Categories'
 import Expenses from './pages/Expenses'
 import Income from './pages/Income'
-// import other pages here (Dashboard, Expenses, etc.)
+import ToBuyList from './pages/ToBuyList'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -19,13 +19,23 @@ function App() {
     const fetchUser = async () => {
       const token = localStorage.getItem('token')
       if (token) {
-        try {
-          const res = await axios.get('/api/user/me', {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          setUser(res.data.user || res.data)
-        } catch (err) {
-          localStorage.removeItem('token')
+        // Retry up to 5 times with 800ms delay (handles backend startup lag)
+        for (let i = 0; i < 5; i++) {
+          try {
+            const res = await axios.get('/api/user/me', {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+            setUser(res.data.user || res.data)
+            break
+          } catch (err) {
+            if (err.code === 'ECONNREFUSED' || err.response === undefined) {
+              await new Promise(r => setTimeout(r, 800))
+              continue
+            }
+            // Actual auth failure — clear token and stop retrying
+            localStorage.removeItem('token')
+            break
+          }
         }
       }
       setLoading(false)
@@ -38,7 +48,6 @@ function App() {
     setUser(null)
   }
 
-  // After login: store user from response
   const handleLogin = (userData) => {
     setUser(userData.user)
     localStorage.setItem('token', userData.token)
@@ -57,7 +66,6 @@ function App() {
     </div>
   )
 
-  // Protected wrapper
   const Protected = ({ children }) => {
     if (!user) return <Navigate to="/login" replace />
     return (
@@ -80,6 +88,7 @@ function App() {
         <Route path="/categories" element={<Protected><Categories user={user} /></Protected>} />
         <Route path="/expenses" element={<Protected><Expenses user={user} /></Protected>} />
         <Route path="/income" element={<Protected><Income user={user} /></Protected>} />
+        <Route path="/tobuy" element={<Protected><ToBuyList user={user} /></Protected>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
