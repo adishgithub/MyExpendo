@@ -10,6 +10,8 @@ import Categories from './pages/Categories'
 import Expenses from './pages/Expenses'
 import Income from './pages/Income'
 import ToBuyList from './pages/ToBuyList'
+import Home from './pages/Home'
+
 
 function App() {
   const [user, setUser] = useState(null)
@@ -81,7 +83,7 @@ function App() {
         <Route path="/register" element={<Register />} />
 
         {/* Protected */}
-        <Route path="/" element={<Protected><div style={{ color: '#1e293b' }}>Dashboard coming soon</div></Protected>} />
+        <Route path="/" element={<Protected><Home user={user} /></Protected>} />
         <Route path="/account" element={<Protected><Account user={user} onLogout={handleLogout} onUpdate={handleUpdate} /></Protected>} />
         <Route path="/categories" element={<Protected><Categories user={user} /></Protected>} />
         <Route path="/expenses" element={<Protected><Expenses user={user} /></Protected>} />

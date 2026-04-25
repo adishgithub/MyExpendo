@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import API from '../utils/api'
 import { useToast } from './Toast'
 import Modal from './Modal'
 
@@ -117,7 +117,7 @@ const QuickAddExpenseModal = ({ open, onClose, user }) => {
   useEffect(() => {
     if (open && user?.user_id) {
       setForm({ expense_category_id: '', amount: '', date: new Date().toISOString().slice(0, 10), description: '' })
-      axios.get('/api/expenseCategory/list', { params: { user_id: user.user_id } })
+      API.get('/api/expenseCategory/list', { params: { user_id: user.user_id } })
         .then(res => setCategories(res.data?.expenseCategories || []))
         .catch(() => { })
     }
@@ -132,7 +132,7 @@ const QuickAddExpenseModal = ({ open, onClose, user }) => {
     if (!form.amount || !form.date) return
     setSaving(true)
     try {
-      await axios.post('/api/expenseList/create', { ...form, user_id: user.user_id })
+      await API.post('/api/expenseList/create', { ...form, user_id: user.user_id })
       toast.success('Expense added successfully.', 'Added')
       onClose()
     } catch (err) {
@@ -202,7 +202,7 @@ const QuickAddIncomeModal = ({ open, onClose, user }) => {
   useEffect(() => {
     if (open && user?.user_id) {
       setForm({ income_category_id: '', amount: '', date: new Date().toISOString().slice(0, 10), description: '' })
-      axios.get('/api/incomeCategory/list', { params: { user_id: user.user_id } })
+      API.get('/api/incomeCategory/list', { params: { user_id: user.user_id } })
         .then(res => setCategories(res.data?.incomeCategories || []))
         .catch(() => { })
     }
@@ -217,7 +217,7 @@ const QuickAddIncomeModal = ({ open, onClose, user }) => {
     if (!form.amount || !form.date) return
     setSaving(true)
     try {
-      await axios.post('/api/incomeList/create', { ...form, user_id: user.user_id })
+      await API.post('/api/incomeList/create', { ...form, user_id: user.user_id })
       toast.success('Income added successfully.', 'Added')
       onClose()
     } catch (err) {
@@ -286,7 +286,7 @@ export const Sidebar = ({ collapsed, user, onLogout }) => {
 
   useEffect(() => {
     if (!user?.user_id) return
-    axios.get('/api/toBuyList/list', {
+    API.get('/api/toBuyList/list', {
       params: { user_id: user.user_id, limit: 1, offset: 0 }
     })
       .then(res => setToBuyCount(res.data?.pagination?.total || null))

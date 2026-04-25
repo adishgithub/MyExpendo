@@ -26,6 +26,7 @@ const serviceCategoryRoutes = require('./routes/service_category_routes');
 const incomeListRoutes = require('./routes/income_routes');
 const expenseListRoutes = require('./routes/expense_routes');
 const toBuyRoutes = require('./routes/to_buy_routes');
+const dashboardRoutes = require('./routes/dashboard');
 
 // Use routes
 app.get('/', (req, res) => res.send('MyExpendo API is running ✅'));
@@ -37,6 +38,7 @@ app.use('/api/serviceCategory', serviceCategoryRoutes);
 app.use('/api/incomeList', incomeListRoutes);
 app.use('/api/expenseList', expenseListRoutes);
 app.use('/api/toBuyList', toBuyRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Connect to MongoDB then start server
 mongoose.connect(MONGODB_URI)
