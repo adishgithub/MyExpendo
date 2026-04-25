@@ -1,7 +1,7 @@
 // App.jsx — Updated routing with Layout + Account page
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import API from './utils/api'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -22,9 +22,7 @@ function App() {
         // Retry up to 5 times with 800ms delay (handles backend startup lag)
         for (let i = 0; i < 5; i++) {
           try {
-            const res = await axios.get('/api/user/me', {
-              headers: { Authorization: `Bearer ${token}` }
-            })
+            const res = await API.get('/api/user/me')
             setUser(res.data.user || res.data)
             break
           } catch (err) {

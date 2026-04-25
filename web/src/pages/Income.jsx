@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import axios from 'axios'
+import API from '../utils/api'
 import { useToast } from '../components/Toast'
 
 const Icon = ({ d, size = 16 }) => (
@@ -10,17 +10,17 @@ const Icon = ({ d, size = 16 }) => (
 )
 
 const ICONS = {
-  plus:      'M12 5v14M5 12h14',
-  edit:      'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z',
-  trash:     'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6',
-  search:    'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0',
-  check:     'M20 6L9 17l-5-5',
-  x:         'M18 6L6 18M6 6l12 12',
-  chevLeft:  'M15 18l-6-6 6-6',
+  plus: 'M12 5v14M5 12h14',
+  edit: 'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z',
+  trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6',
+  search: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0',
+  check: 'M20 6L9 17l-5-5',
+  x: 'M18 6L6 18M6 6l12 12',
+  chevLeft: 'M15 18l-6-6 6-6',
   chevRight: 'M9 18l6-6-6-6',
-  income:    'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 7h2v4h2l-3 3-3-3h2V9z',
-  empty:     'M9 17H7A5 5 0 017 7h1M15 7h1a5 5 0 010 10h-2M8 12h8',
-  arrowUp:   'M12 19V5M5 12l7-7 7 7',
+  income: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 7h2v4h2l-3 3-3-3h2V9z',
+  empty: 'M9 17H7A5 5 0 017 7h1M15 7h1a5 5 0 010 10h-2M8 12h8',
+  arrowUp: 'M12 19V5M5 12l7-7 7 7',
 }
 
 /* ── Animated Modal ── */
@@ -110,7 +110,7 @@ const IncomeModal = ({ open, onClose, onSave, item, categories }) => {
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
   const focusStyle = e => { e.target.style.borderColor = '#10b981'; e.target.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.1)' }
-  const blurStyle  = e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none' }
+  const blurStyle = e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none' }
 
   const handle = async () => {
     if (!form.amount || !form.date) return
@@ -222,25 +222,25 @@ const IncomeRow = ({ item, onEdit, onDelete, index }) => {
 const Income = ({ user }) => {
   const toast = useToast()
 
-  const [items, setItems]           = useState([])
+  const [items, setItems] = useState([])
   const [categories, setCategories] = useState([])
-  const [loading, setLoading]       = useState(true)
+  const [loading, setLoading] = useState(true)
   const [pagination, setPagination] = useState({ total: 0, offset: 0, limit: 20, hasNextPage: false, hasPrevPage: false })
 
-  const [search, setSearch]         = useState('')
-  const [fromDate, setFromDate]     = useState('')
-  const [toDate, setToDate]         = useState('')
-  const [catFilter, setCatFilter]   = useState('')
+  const [search, setSearch] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+  const [catFilter, setCatFilter] = useState('')
 
-  const [addOpen, setAddOpen]       = useState(false)
-  const [editItem, setEditItem]     = useState(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const [editItem, setEditItem] = useState(null)
   const [deleteItem, setDeleteItem] = useState(null)
 
   const searchTimer = useRef(null)
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await axios.get('/api/incomeCategory/list', { params: { user_id: user?.user_id } })
+      const res = await API.get('/api/incomeCategory/list', { params: { user_id: user?.user_id } })
       setCategories(res.data?.incomeCategories || [])
     } catch { /* silent */ }
   }, [user?.user_id])
@@ -250,16 +250,16 @@ const Income = ({ user }) => {
     setLoading(true)
     try {
       const params = {
-        user_id:   user.user_id,
+        user_id: user.user_id,
         offset,
-        limit:     pagination.limit,
-        search:    overrides.search    ?? search,
-        from_date: overrides.fromDate  ?? fromDate,
-        to_date:   overrides.toDate    ?? toDate,
+        limit: pagination.limit,
+        search: overrides.search ?? search,
+        from_date: overrides.fromDate ?? fromDate,
+        to_date: overrides.toDate ?? toDate,
         income_category_id: overrides.catFilter ?? catFilter,
       }
       Object.keys(params).forEach(k => !params[k] && delete params[k])
-      const res = await axios.get('/api/incomeList/list', { params })
+      const res = await API.get('/api/incomeList/list', { params })
       setItems(res.data?.incomes || [])
       setPagination(res.data?.pagination || {})
     } catch {
@@ -285,14 +285,14 @@ const Income = ({ user }) => {
   const handleFilter = (key, val) => {
     const overrides = {}
     if (key === 'fromDate') { setFromDate(val); overrides.fromDate = val }
-    if (key === 'toDate')   { setToDate(val);   overrides.toDate   = val }
-    if (key === 'cat')      { setCatFilter(val); overrides.catFilter = val }
+    if (key === 'toDate') { setToDate(val); overrides.toDate = val }
+    if (key === 'cat') { setCatFilter(val); overrides.catFilter = val }
     fetchList(0, overrides)
   }
 
   const handleAdd = async (form) => {
     try {
-      await axios.post('/api/incomeList/create', { ...form, user_id: user.user_id })
+      await API.post('/api/incomeList/create', { ...form, user_id: user.user_id })
       toast.success('Income added successfully.', 'Added')
       setAddOpen(false)
       fetchList(pagination.offset)
@@ -303,7 +303,7 @@ const Income = ({ user }) => {
 
   const handleEdit = async (form) => {
     try {
-      await axios.put('/api/incomeList/update', { ...form, income_id: editItem._id })
+      await API.put('/api/incomeList/update', { ...form, income_id: editItem._id })
       toast.success('Income updated.', 'Updated')
       setEditItem(null)
       fetchList(pagination.offset)
@@ -314,7 +314,7 @@ const Income = ({ user }) => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete('/api/incomeList/delete', { data: { income_id: deleteItem._id } })
+      await API.delete('/api/incomeList/delete', { data: { income_id: deleteItem._id } })
       toast.success('Income deleted.', 'Deleted')
       setDeleteItem(null)
       fetchList(pagination.offset)
@@ -328,8 +328,8 @@ const Income = ({ user }) => {
     fetchList(0, { search: '', fromDate: '', toDate: '', catFilter: '' })
   }
 
-  const hasFilters  = search || fromDate || toDate || catFilter
-  const totalPages  = Math.ceil(pagination.total / pagination.limit)
+  const hasFilters = search || fromDate || toDate || catFilter
+  const totalPages = Math.ceil(pagination.total / pagination.limit)
   const currentPage = Math.floor(pagination.offset / pagination.limit) + 1
 
   return (

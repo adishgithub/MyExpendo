@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import axios from 'axios'
+import API from '../utils/api'
 import { useToast } from '../components/Toast'
 
 const Icon = ({ d, size = 16 }) => (
@@ -246,7 +246,7 @@ const Expenses = ({ user }) => {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await axios.get('/api/expenseCategory/list', { params: { user_id: user?.user_id } })
+      const res = await API.get('/api/expenseCategory/list', { params: { user_id: user?.user_id } })
       setCategories(res.data?.expenseCategories || [])
     } catch { /* silent */ }
   }, [user?.user_id])
@@ -266,7 +266,7 @@ const Expenses = ({ user }) => {
       }
       // remove empty params
       Object.keys(params).forEach(k => !params[k] && delete params[k])
-      const res = await axios.get('/api/expenseList/list', { params })
+      const res = await API.get('/api/expenseList/list', { params })
       setItems(res.data?.expenses || [])
       setPagination(res.data?.pagination || {})
     } catch {
@@ -300,7 +300,7 @@ const Expenses = ({ user }) => {
 
   const handleAdd = async (form) => {
     try {
-      await axios.post('/api/expenseList/create', { ...form, user_id: user.user_id })
+      await API.post('/api/expenseList/create', { ...form, user_id: user.user_id })
       toast.success('Expense added successfully.', 'Added')
       setAddOpen(false)
       fetchList(pagination.offset)
@@ -311,7 +311,7 @@ const Expenses = ({ user }) => {
 
   const handleEdit = async (form) => {
     try {
-      await axios.put('/api/expenseList/update', { ...form, expense_id: editItem._id })
+      await API.put('/api/expenseList/update', { ...form, expense_id: editItem._id })
       toast.success('Expense updated.', 'Updated')
       setEditItem(null)
       fetchList(pagination.offset)
@@ -322,7 +322,7 @@ const Expenses = ({ user }) => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete('/api/expenseList/delete', { data: { expense_id: deleteItem._id } })
+      await API.delete('/api/expenseList/delete', { data: { expense_id: deleteItem._id } })
       toast.success('Expense deleted.', 'Deleted')
       setDeleteItem(null)
       fetchList(pagination.offset)

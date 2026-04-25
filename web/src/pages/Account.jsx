@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import Modal from '../components/Modal'
 import { useState, useEffect } from 'react'
 import { useToast } from '../components/Toast'
-import axios from 'axios'
+import API from '../utils/api'
 
 const Icon = ({ d, size = 18 }) => {
   if (!d) return null
@@ -88,7 +88,7 @@ const Account = ({ user, onLogout, onUpdate }) => {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const res = await axios.put('/api/user/update', {
+      const res = await API.put('/api/user/update', {
         _id: user?._id,
         full_name: form.full_name,
         username: form.username,

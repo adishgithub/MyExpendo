@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import axios from 'axios'
+import API from '../utils/api'
 import { useToast } from '../components/Toast'
 
 /* ─── tiny SVG icon ─── */
@@ -302,7 +302,7 @@ const CategoryPanel = ({ config, user }) => {
 const fetchList = useCallback(async () => {
     setLoading(true)
     try {
-        const res = await axios.get(`${apiBase}/list`, {
+        const res = await API.get(`${apiBase}/list`, {
             params: { user_id: user?.user_id }
         })
         const raw = res.data?.[responseKey] || []
@@ -321,7 +321,7 @@ useEffect(() => {
 
   const handleAdd = async (name) => {
     try {
-      await axios.post(`${apiBase}/create`, {
+      await API.post(`${apiBase}/create`, {
         [nameField]: name,
         user_id: user.user_id    // ← this must be present
       })
@@ -335,7 +335,7 @@ useEffect(() => {
 
   const handleEdit = async (name) => {
     try {
-      await axios.put(`${apiBase}/update`, {
+      await API.put(`${apiBase}/update`, {
         [idField]: editItem._id || editItem[idField],
         [nameField]: name,
         user_id: user.user_id    // ← this must be present
@@ -350,7 +350,7 @@ useEffect(() => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`${apiBase}/delete`, {
+      await API.delete(`${apiBase}/delete`, {
         data: { [idField]: deleteItem._id || deleteItem[idField], user_id: user.user_id }
       })
       toast.success(`"${deleteItem[nameField]}" deleted.`, label)

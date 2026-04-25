@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import axios from 'axios'
+import API from '../utils/api'
 import { useToast } from '../components/Toast'
 
 const Icon = ({ d, size = 16 }) => (
@@ -399,7 +399,7 @@ const ToBuyList = ({ user }) => {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await axios.get('/api/productCategory/list', { params: { user_id: user?.user_id } })
+      const res = await API.get('/api/productCategory/list', { params: { user_id: user?.user_id } })
       setCategories(res.data?.productCategories || [])
     } catch { /* silent */ }
   }, [user?.user_id])
@@ -415,7 +415,7 @@ const ToBuyList = ({ user }) => {
         search: overrides.search ?? search,
       }
       Object.keys(params).forEach(k => (params[k] === '' || params[k] === undefined) && delete params[k])
-      const res = await axios.get('/api/toBuyList/list', { params })
+      const res = await API.get('/api/toBuyList/list', { params })
       setItems(res.data?.items || [])
       setPagination(res.data?.pagination || {})
     } catch {
@@ -440,7 +440,7 @@ const ToBuyList = ({ user }) => {
 
   const handleAdd = async (form) => {
     try {
-      await axios.post('/api/toBuyList/create', { ...form, user_id: user.user_id })
+      await API.post('/api/toBuyList/create', { ...form, user_id: user.user_id })
       toast.success('Item added to buy list.', 'Added')
       setAddOpen(false)
       fetchList(pagination.offset)
@@ -451,7 +451,7 @@ const ToBuyList = ({ user }) => {
 
   const handleEdit = async (form) => {
     try {
-      await axios.put('/api/toBuyList/update', { ...form, item_id: editItem.item_id })
+      await API.put('/api/toBuyList/update', { ...form, item_id: editItem.item_id })
       toast.success('Item updated.', 'Updated')
       setEditItem(null)
       fetchList(pagination.offset)
@@ -462,7 +462,7 @@ const ToBuyList = ({ user }) => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete('/api/toBuyList/delete', { data: { item_id: deleteItem.item_id } })
+      await API.delete('/api/toBuyList/delete', { data: { item_id: deleteItem.item_id } })
       toast.success('Item removed.', 'Removed')
       setDeleteItem(null)
       fetchList(pagination.offset)
@@ -478,7 +478,7 @@ const ToBuyList = ({ user }) => {
       i.item_id === item.item_id ? { ...i, priority_point: (i.priority_point || 1) + 1 } : i
     ))
     try {
-      await axios.put('/api/toBuyList/update', {
+      await API.put('/api/toBuyList/update', {
         item_id: item.item_id,
         priority_point: (item.priority_point || 1) + 1,
       })

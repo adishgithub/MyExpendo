@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import API from '../utils/api'
 import Input from '../components/Input'
 import Button from '../components/Button'
 import HeroPanel from '../components/HeroPanel'
@@ -37,9 +37,9 @@ const LockIcon = () => (
 function getStrength(pw) {
   if (!pw) return { score: 0, color: '' }
   let score = 0
-  if (pw.length >= 8)          score++
-  if (/[A-Z]/.test(pw))        score++
-  if (/[0-9]/.test(pw))        score++
+  if (pw.length >= 8) score++
+  if (/[A-Z]/.test(pw)) score++
+  if (/[0-9]/.test(pw)) score++
   if (/[^A-Za-z0-9]/.test(pw)) score++
   const colors = ['', 'bg-red-400', 'bg-amber-400', 'bg-yellow-400', 'bg-emerald-500']
   return { score, color: colors[score] }
@@ -53,7 +53,7 @@ function StepIndicator({ current }) {
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
       {steps.map((s, i) => {
-        const done   = current > s.num
+        const done = current > s.num
         const active = current === s.num
         return (
           <div key={s.num} className="flex items-center gap-2">
@@ -61,7 +61,7 @@ function StepIndicator({ current }) {
               <div className={`
                 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold
                 transition-all duration-300
-                ${done   ? 'bg-[#4f6ef7] text-white ring-2 ring-blue-200' : ''}
+                ${done ? 'bg-[#4f6ef7] text-white ring-2 ring-blue-200' : ''}
                 ${active ? 'bg-[#4f6ef7] text-white ring-4 ring-blue-100' : ''}
                 ${!done && !active ? 'bg-gray-100 text-gray-400' : ''}
               `}>
@@ -107,19 +107,19 @@ export default function Register() {
 
   const validateStep1 = () => {
     const errs = {}
-    if (!form.username.trim())  errs.username = 'Username is required'
+    if (!form.username.trim()) errs.username = 'Username is required'
     else if (form.username.length < 3) errs.username = 'Min 3 characters'
-    if (!form.fullName.trim())  errs.fullName = 'Full name is required'
-    if (!form.email.trim())     errs.email = 'Email is required'
+    if (!form.fullName.trim()) errs.fullName = 'Full name is required'
+    if (!form.email.trim()) errs.email = 'Email is required'
     else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Invalid email'
     return errs
   }
 
   const validateStep2 = () => {
     const errs = {}
-    if (!form.password)         errs.password = 'Password is required'
+    if (!form.password) errs.password = 'Password is required'
     else if (form.password.length < 3) errs.password = 'Min 3 characters'
-    if (!form.confirmPassword)  errs.confirmPassword = 'Please confirm password'
+    if (!form.confirmPassword) errs.confirmPassword = 'Please confirm password'
     else if (form.password !== form.confirmPassword)
       errs.confirmPassword = 'Passwords do not match'
     return errs
@@ -140,11 +140,11 @@ export default function Register() {
     setLoading(true)
     try {
       // Map fullName → full_name to match your API's expected field name
-      await axios.post('/api/user/register', {
-        username:  form.username,
-        password:  form.password,
+      await API.post('/api/user/register', {
+        username: form.username,
+        password: form.password,
         full_name: form.fullName,
-        email:     form.email,
+        email: form.email,
       })
 
       // On success → go to login
@@ -266,7 +266,7 @@ export default function Register() {
                     </div>
                     <div className="flex gap-3 mt-2 flex-wrap">
                       {[
-                        { test: form.password.length >= 8,   label: 'At least 8 characters' },
+                        { test: form.password.length >= 8, label: 'At least 8 characters' },
                         { test: /[A-Z]/.test(form.password), label: 'One uppercase letter' },
                         { test: /[0-9]/.test(form.password), label: 'One number' },
                       ].map(r => (
