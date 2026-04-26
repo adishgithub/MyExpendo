@@ -7,7 +7,7 @@ const ExpenseList = require('../models/expense_list');
 // Create to-buy item
 router.post('/create', async (req, res) => {
     try {
-        const { user_id, item_name, product_category_id, expected_price } = req.body;
+        const { user_id, item_name, product_category_id, expected_price, added_date } = req.body;
 
         if (!user_id || !item_name || !product_category_id || expected_price === undefined) {
             return res.status(400).json({
@@ -25,7 +25,7 @@ router.post('/create', async (req, res) => {
             status: 'not ordered',
             expected_price,
             actual_price: 0,
-            added_date: new Date(),
+            added_date: added_date ? new Date(added_date) : new Date(), // ← use frontend date if provided
             bought_date: null,
         });
 
@@ -55,11 +55,9 @@ router.get('/list', async (req, res) => {
             return res.status(400).json({ success: false, message: 'user_id is required' });
         }
 
-        // ── Aggregation pipeline ────────────────────────────────────────
         const pipeline = [
             { $match: { user_id } },
 
-            // Join product_category_lists collection
             {
                 $lookup: {
                     from: 'product_category_lists',
@@ -69,17 +67,14 @@ router.get('/list', async (req, res) => {
                 },
             },
 
-            // Flatten joined array to a single field
             {
                 $addFields: {
                     product_category_name: { $arrayElemAt: ['$category.product_category_name', 0] },
                 },
             },
 
-            // Drop the raw joined array and internal fields
             { $project: { category: 0, __v: 0 } },
 
-            // Search across item_name, category name, expected_price, actual_price, status
             ...(search ? [{
                 $match: {
                     $or: [
@@ -94,10 +89,33 @@ router.get('/list', async (req, res) => {
 
             { $sort: { priority_point: -1, added_date: -1 } },
 
-            // Count + paginated data in parallel
             {
                 $facet: {
                     total: [{ $count: 'count' }],
+                    // ── Summary totals across ALL matched items (not just current page) ──
+                    summary: [
+                        {
+                            $group: {
+                                _id: null,
+                                totalExpected: { $sum: '$expected_price' },
+                                totalActualPaid: { $sum: '$actual_price' },
+                                totalItems: { $sum: 1 },
+                                boughtItems: {
+                                    $sum: { $cond: [{ $eq: [{ $toLower: '$status' }, 'done'] }, 1, 0] },
+                                },
+                                // Sum (expected - actual) only for Done items
+                                savedFromDone: {
+                                    $sum: {
+                                        $cond: [
+                                            { $eq: [{ $toLower: '$status' }, 'done'] },
+                                            { $subtract: ['$expected_price', '$actual_price'] },
+                                            0,
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                    ],
                     items: [
                         { $skip: offset },
                         { $limit: limit },
@@ -109,11 +127,20 @@ router.get('/list', async (req, res) => {
         const [result] = await ToBuyList.aggregate(pipeline);
 
         const total = result.total[0]?.count || 0;
+        const summaryRaw = result.summary[0] || { totalExpected: 0, totalActualPaid: 0, totalItems: 0, boughtItems: 0 };
+        const summary = {
+            totalExpected: summaryRaw.totalExpected,
+            totalActual: summaryRaw.totalActualPaid,
+            saved: Math.max(0, summaryRaw.savedFromDone),  // ← only Done items
+            totalItems: summaryRaw.totalItems,
+            boughtItems: summaryRaw.boughtItems,
+        };
 
         res.status(200).json({
             success: true,
             message: 'Buy list fetched successfully',
             items: result.items,
+            summary,
             pagination: {
                 total,
                 offset,
@@ -153,14 +180,16 @@ router.put('/update', async (req, res) => {
         const updatedItem = await ToBuyList.findOneAndUpdate(
             { item_id },
             {
-                item_name,
-                product_category_id,
-                priority_point,
-                status,
-                expected_price,
-                actual_price,
-                added_date,
-                bought_date,
+                ...(item_name !== undefined && { item_name }),
+                ...(product_category_id !== undefined && { product_category_id }),
+                ...(priority_point !== undefined && { priority_point }),
+                ...(status !== undefined && { status }),
+                ...(expected_price !== undefined && { expected_price }),
+                ...(actual_price !== undefined && { actual_price }),
+                ...(added_date !== undefined && { added_date }),
+                // Auto-set bought_date when marking Done and none provided
+                ...(status?.toLowerCase() === 'done' && !bought_date && { bought_date: new Date() }),
+                ...(bought_date !== undefined && { bought_date }),
             },
             { new: true }
         );
@@ -170,17 +199,23 @@ router.put('/update', async (req, res) => {
         }
 
         // ── Sync to expense list when status is set to "Done" ──────────
+        // Guard: only create expense if one hasn't been created for this item yet
         if (status && status.toLowerCase() === 'done') {
-            const expenseDate = updatedItem.bought_date || new Date();
+            const existingExpense = await ExpenseList.findOne({ source_item_id: item_id });
 
-            await ExpenseList.create({
-                expense_id: uuidv4(),
-                user_id: updatedItem.user_id,
-                expense_category_id: updatedItem.product_category_id,
-                amount: updatedItem.actual_price,
-                date: expenseDate,
-                description: updatedItem.item_name,
-            });
+            if (!existingExpense) {
+                const expenseDate = updatedItem.bought_date || new Date();
+
+                await ExpenseList.create({
+                    expense_id: uuidv4(),
+                    user_id: updatedItem.user_id,
+                    expense_category_id: updatedItem.product_category_id,
+                    amount: updatedItem.actual_price,
+                    date: expenseDate,
+                    description: updatedItem.item_name,
+                    source_item_id: item_id, // ← link to prevent duplicates
+                });
+            }
         }
 
         res.status(200).json({
