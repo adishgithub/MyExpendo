@@ -8,7 +8,12 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: [
+    process.env.CLIENT_URL,
+    'http://localhost:8081',   // Expo web
+    'http://localhost:19006',  // Expo alternate
+    'http://localhost:5173',   // fallback
+  ].filter(Boolean),
   credentials: true
 }));
 app.use(express.json());

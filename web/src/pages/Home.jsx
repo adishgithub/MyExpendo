@@ -265,7 +265,23 @@ const Home = ({ user }) => {
     }
   }
 
-  useEffect(() => { fetchDashboard(fromDate, toDate) }, [user?.user_id])
+  useEffect(() => {
+    fetchDashboard(fromDate, toDate)
+
+    const handleFocus = () => fetchDashboard(fromDate, toDate)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchDashboard(fromDate, toDate)
+    }
+
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [user?.user_id])
+
 
   const handlePreset = (index) => {
     setActivePreset(index)
@@ -318,9 +334,25 @@ const Home = ({ user }) => {
           </p>
         </div>
 
-        {/* Range filter */}
-        <div style={{ position: 'relative' }}>
+        {/* Refresh button + Range filter */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button
+            onClick={() => fetchDashboard(fromDate, toDate)}
+            title="Refresh dashboard"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 12,
+              padding: '9px 14px', fontSize: 13, fontWeight: 600, color: '#64748b',
+              cursor: 'pointer', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#6366f1' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#64748b' }}>
+            <Icon d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" size={15} />
+            Refresh
+          </button>
+
+          {/* Range filter */}
+          <div style={{ position: 'relative' }}>          <button
             onClick={() => setFilterOpen(o => !o)}
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
@@ -335,211 +367,212 @@ const Home = ({ user }) => {
             <Icon d={ICONS.chevDown} size={14} />
           </button>
 
-          {filterOpen && (
-            <div className="filter-dropdown" style={{
-              position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 100,
-              background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16,
-              boxShadow: '0 16px 48px rgba(0,0,0,0.12)', padding: 16, minWidth: 240,
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', marginBottom: 10, textTransform: 'uppercase' }}>Quick select</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {PRESETS.map((p, i) => (
-                  <button key={p.label} className="preset-btn"
-                    onClick={() => handlePreset(i)}
-                    style={{
-                      padding: '9px 12px', borderRadius: 9, border: 'none', textAlign: 'left',
-                      fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                      background: activePreset === i ? '#eef2ff' : 'transparent',
-                      color: activePreset === i ? '#4f46e5' : '#1e293b',
-                      transition: 'all 0.15s',
-                    }}>
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-
-              {showCustom && (
-                <div style={{ marginTop: 14, borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', marginBottom: 10, textTransform: 'uppercase' }}>Custom range</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div>
-                      <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>From</label>
-                      <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
-                        style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', color: '#1e293b' }} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>To</label>
-                      <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
-                        style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', color: '#1e293b' }} />
-                    </div>
-                    <button onClick={handleCustomApply}
-                      style={{ width: '100%', padding: '9px 0', borderRadius: 9, border: 'none', background: '#6366f1', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', marginTop: 4 }}>
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Click outside to close filter */}
-      {filterOpen && <div onClick={() => setFilterOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />}
-
-      {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh', flexDirection: 'column', gap: 16 }}>
-          <div style={{ width: 40, height: 40, border: '3px solid #e2e8f0', borderTop: '3px solid #6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <span style={{ color: '#94a3b8', fontSize: 14 }}>Loading…</span>
-        </div>
-      ) : (
-        <>
-          {/* Metric cards */}
-          <div style={{ display: 'flex', gap: 14, marginBottom: 24, flexWrap: 'wrap' }}>
-            <MetricCard label="Total Income" value={d.totalIncome || 0} color="#10b981" icon={ICONS.income}
-              sub={`Saved ${d.savingsRate || 0}% this period`} started={started} index={0} />
-            <MetricCard label="Total Expenses" value={d.totalExpenses || 0} color="#ef4444" icon={ICONS.expense}
-              sub="Spending this period" started={started} index={1} />
-            <MetricCard label="Net Savings" value={Math.max(d.netSavings || 0, 0)} color="#6366f1" icon={ICONS.savings}
-              sub={d.netSavings < 0 ? '⚠️ Overspending!' : 'Keep it up!'} started={started} index={2} />
-            <MetricCard label="To Buy Items" value={d.toBuyCount?.total || 0} color="#f97316" icon={ICONS.cart}
-              prefix="" sub={`${d.toBuyCount?.['not ordered'] || 0} pending · ${d.toBuyCount?.ordered || 0} ordered`} started={started} index={3} />
-          </div>
-
-          {/* Row 2 */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.6fr) minmax(0,1fr)', gap: 14, marginBottom: 24 }}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <CardTitle>6-month trend</CardTitle>
-                <div style={{ display: 'flex', gap: 14, fontSize: 12, color: '#64748b' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 2, background: '#10b981', display: 'inline-block' }} />Income
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 2, background: '#ef4444', display: 'inline-block' }} />Expenses
-                  </span>
-                </div>
-              </div>
-              <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 16 }}>Hover over bars to see details</div>
-              {(d.monthlyTrend || []).every(m => m.income === 0 && m.expenses === 0) ? (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
-                  <Icon d={ICONS.empty} size={36} />
-                  <div style={{ marginTop: 10, fontSize: 13 }}>No data yet</div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: 160, paddingBottom: 4 }}>
-                  {(d.monthlyTrend || []).map((m, i) => (
-                    <MonthBar key={m.label} item={m} max={monthMax} index={i}
-                      isCurrentMonth={i === (d.monthlyTrend?.length || 1) - 1} />
-                  ))}
-                </div>
-              )}
-            </Card>
-
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <CardTitle>By category</CardTitle>
-                <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 8, padding: 3, gap: 2 }}>
-                  {['expenses', 'income'].map(tab => (
-                    <button key={tab} className="dash-tab" onClick={() => setActiveTab(tab)}
-                      style={{
-                        padding: '5px 10px', borderRadius: 6, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                        background: activeTab === tab ? '#fff' : 'transparent',
-                        color: activeTab === tab ? '#0f172a' : '#64748b',
-                        boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                      }}>
-                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {activeTab === 'expenses'
-                ? (d.expenseByCategory || []).length === 0
-                  ? <div style={{ textAlign: 'center', padding: '30px 0', color: '#94a3b8', fontSize: 13 }}>No expenses this period</div>
-                  : (d.expenseByCategory || []).map((c, i) => <CatRow key={c._id} name={c._id} total={c.total} max={expMax} color={catColors[i % catColors.length]} index={i} />)
-                : (d.incomeByCategory || []).length === 0
-                  ? <div style={{ textAlign: 'center', padding: '30px 0', color: '#94a3b8', fontSize: 13 }}>No income this period</div>
-                  : (d.incomeByCategory || []).map((c, i) => <CatRow key={c._id} name={c._id} total={c.total} max={incMax} color={catColors[i % catColors.length]} index={i} />)
-              }
-            </Card>
-          </div>
-
-          {/* Row 3 */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) minmax(0,1fr)', gap: 14 }}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <CardTitle>Recent transactions</CardTitle>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={() => navigate('/expenses')} className="nav-link-btn"
-                    style={{ fontSize: 12, color: '#6366f1', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 10px', borderRadius: 8, transition: 'all 0.15s' }}>
-                    Expenses →
-                  </button>
-                  <button onClick={() => navigate('/income')} className="nav-link-btn"
-                    style={{ fontSize: 12, color: '#10b981', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 10px', borderRadius: 8, transition: 'all 0.15s' }}>
-                    Income →
-                  </button>
-                </div>
-              </div>
-              {(() => {
-                const all = [
-                  ...(d.recentExpenses || []).map(e => ({ ...e, _type: 'expense' })),
-                  ...(d.recentIncomes || []).map(e => ({ ...e, _type: 'income' })),
-                ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8)
-                return all.length === 0
-                  ? <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}><Icon d={ICONS.receipt} size={32} /><div style={{ marginTop: 10, fontSize: 13 }}>No transactions this period</div></div>
-                  : all.map((item, i) => <TxRow key={item._id} item={item} type={item._type} index={i} />)
-              })()}
-            </Card>
-
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <CardTitle>To buy summary</CardTitle>
-                <button onClick={() => navigate('/tobuy')} className="nav-link-btn"
-                  style={{ fontSize: 12, color: '#f97316', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 10px', borderRadius: 8, transition: 'all 0.15s' }}>
-                  View all →
-                </button>
-              </div>
-              <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-                {[
-                  { label: 'Pending', key: 'not ordered', color: '#f59e0b', bg: '#fffbeb' },
-                  { label: 'Ordered', key: 'ordered', color: '#3b82f6', bg: '#eff6ff' },
-                  { label: 'Done', key: 'done', color: '#10b981', bg: '#f0fdf4' },
-                ].map(s => (
-                  <div key={s.key} className="stat-badge"
-                    style={{ flex: 1, background: s.bg, borderRadius: 12, padding: '12px 10px', textAlign: 'center', border: `1px solid ${s.color}20` }}>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{d.toBuyCount?.[s.key] || 0}</div>
-                    <div style={{ fontSize: 11, color: s.color, fontWeight: 600, marginTop: 2 }}>{s.label}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Savings rate</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#6366f1' }}>{d.savingsRate || 0}%</span>
-                </div>
-                <div style={{ height: 8, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
-                  <AnimatedBar pct={Math.min(d.savingsRate || 0, 100)} color="#6366f1" delay={400} />
-                </div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 8 }}>
-                  {(d.savingsRate || 0) >= 20 ? '✅ Great savings rate!' : (d.savingsRate || 0) > 0 ? '💡 Aim for 20%+ savings' : '⚠️ No savings this period'}
-                </div>
-              </div>
-              <div style={{
-                marginTop: 14, borderRadius: 12, padding: '14px 16px',
-                background: (d.netSavings || 0) >= 0 ? '#f0fdf4' : '#fef2f2',
-                border: `1px solid ${(d.netSavings || 0) >= 0 ? '#bbf7d0' : '#fecaca'}`,
+            {filterOpen && (
+              <div className="filter-dropdown" style={{
+                position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 100,
+                background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16,
+                boxShadow: '0 16px 48px rgba(0,0,0,0.12)', padding: 16, minWidth: 240,
               }}>
-                <div style={{ fontSize: 11, color: (d.netSavings || 0) >= 0 ? '#15803d' : '#dc2626', fontWeight: 600, marginBottom: 4 }}>
-                  {(d.netSavings || 0) >= 0 ? 'NET SAVINGS THIS PERIOD' : 'OVERSPENT THIS PERIOD'}
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', marginBottom: 10, textTransform: 'uppercase' }}>Quick select</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {PRESETS.map((p, i) => (
+                    <button key={p.label} className="preset-btn"
+                      onClick={() => handlePreset(i)}
+                      style={{
+                        padding: '9px 12px', borderRadius: 9, border: 'none', textAlign: 'left',
+                        fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                        background: activePreset === i ? '#eef2ff' : 'transparent',
+                        color: activePreset === i ? '#4f46e5' : '#1e293b',
+                        transition: 'all 0.15s',
+                      }}>
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: (d.netSavings || 0) >= 0 ? '#15803d' : '#dc2626' }}>
-                  {(d.netSavings || 0) >= 0 ? '+' : '−'}₹{Math.abs(d.netSavings || 0).toLocaleString('en-IN')}
-                </div>
+
+                {showCustom && (
+                  <div style={{ marginTop: 14, borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', marginBottom: 10, textTransform: 'uppercase' }}>Custom range</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div>
+                        <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>From</label>
+                        <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
+                          style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', color: '#1e293b' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>To</label>
+                        <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
+                          style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', color: '#1e293b' }} />
+                      </div>
+                      <button onClick={handleCustomApply}
+                        style={{ width: '100%', padding: '9px 0', borderRadius: 9, border: 'none', background: '#6366f1', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', marginTop: 4 }}>
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </Card>
+            )}
           </div>
-        </>
-      )}
+        </div>
+
+        {/* Click outside to close filter */}
+        {filterOpen && <div onClick={() => setFilterOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />}
+
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh', flexDirection: 'column', gap: 16 }}>
+            <div style={{ width: 40, height: 40, border: '3px solid #e2e8f0', borderTop: '3px solid #6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <span style={{ color: '#94a3b8', fontSize: 14 }}>Loading…</span>
+          </div>
+        ) : (
+          <>
+            {/* Metric cards */}
+            <div style={{ display: 'flex', gap: 14, marginBottom: 24, flexWrap: 'wrap' }}>
+              <MetricCard label="Total Income" value={d.totalIncome || 0} color="#10b981" icon={ICONS.income}
+                sub={`Saved ${d.savingsRate || 0}% this period`} started={started} index={0} />
+              <MetricCard label="Total Expenses" value={d.totalExpenses || 0} color="#ef4444" icon={ICONS.expense}
+                sub="Spending this period" started={started} index={1} />
+              <MetricCard label="Net Savings" value={Math.max(d.netSavings || 0, 0)} color="#6366f1" icon={ICONS.savings}
+                sub={d.netSavings < 0 ? '⚠️ Overspending!' : 'Keep it up!'} started={started} index={2} />
+              <MetricCard label="To Buy Items" value={d.toBuyCount?.total || 0} color="#f97316" icon={ICONS.cart}
+                prefix="" sub={`${d.toBuyCount?.['not ordered'] || 0} pending · ${d.toBuyCount?.ordered || 0} ordered`} started={started} index={3} />
+            </div>
+
+            {/* Row 2 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.6fr) minmax(0,1fr)', gap: 14, marginBottom: 24 }}>
+              <Card>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <CardTitle>6-month trend</CardTitle>
+                  <div style={{ display: 'flex', gap: 14, fontSize: 12, color: '#64748b' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: '#10b981', display: 'inline-block' }} />Income
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: '#ef4444', display: 'inline-block' }} />Expenses
+                    </span>
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 16 }}>Hover over bars to see details</div>
+                {(d.monthlyTrend || []).every(m => m.income === 0 && m.expenses === 0) ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
+                    <Icon d={ICONS.empty} size={36} />
+                    <div style={{ marginTop: 10, fontSize: 13 }}>No data yet</div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: 160, paddingBottom: 4 }}>
+                    {(d.monthlyTrend || []).map((m, i) => (
+                      <MonthBar key={m.label} item={m} max={monthMax} index={i}
+                        isCurrentMonth={i === (d.monthlyTrend?.length || 1) - 1} />
+                    ))}
+                  </div>
+                )}
+              </Card>
+
+              <Card>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <CardTitle>By category</CardTitle>
+                  <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 8, padding: 3, gap: 2 }}>
+                    {['expenses', 'income'].map(tab => (
+                      <button key={tab} className="dash-tab" onClick={() => setActiveTab(tab)}
+                        style={{
+                          padding: '5px 10px', borderRadius: 6, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                          background: activeTab === tab ? '#fff' : 'transparent',
+                          color: activeTab === tab ? '#0f172a' : '#64748b',
+                          boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                        }}>
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {activeTab === 'expenses'
+                  ? (d.expenseByCategory || []).length === 0
+                    ? <div style={{ textAlign: 'center', padding: '30px 0', color: '#94a3b8', fontSize: 13 }}>No expenses this period</div>
+                    : (d.expenseByCategory || []).map((c, i) => <CatRow key={c._id} name={c._id} total={c.total} max={expMax} color={catColors[i % catColors.length]} index={i} />)
+                  : (d.incomeByCategory || []).length === 0
+                    ? <div style={{ textAlign: 'center', padding: '30px 0', color: '#94a3b8', fontSize: 13 }}>No income this period</div>
+                    : (d.incomeByCategory || []).map((c, i) => <CatRow key={c._id} name={c._id} total={c.total} max={incMax} color={catColors[i % catColors.length]} index={i} />)
+                }
+              </Card>
+            </div>
+
+            {/* Row 3 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) minmax(0,1fr)', gap: 14 }}>
+              <Card>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <CardTitle>Recent transactions</CardTitle>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => navigate('/expenses')} className="nav-link-btn"
+                      style={{ fontSize: 12, color: '#6366f1', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 10px', borderRadius: 8, transition: 'all 0.15s' }}>
+                      Expenses →
+                    </button>
+                    <button onClick={() => navigate('/income')} className="nav-link-btn"
+                      style={{ fontSize: 12, color: '#10b981', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 10px', borderRadius: 8, transition: 'all 0.15s' }}>
+                      Income →
+                    </button>
+                  </div>
+                </div>
+                {(() => {
+                  const all = [
+                    ...(d.recentExpenses || []).map(e => ({ ...e, _type: 'expense' })),
+                    ...(d.recentIncomes || []).map(e => ({ ...e, _type: 'income' })),
+                  ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8)
+                  return all.length === 0
+                    ? <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}><Icon d={ICONS.receipt} size={32} /><div style={{ marginTop: 10, fontSize: 13 }}>No transactions this period</div></div>
+                    : all.map((item, i) => <TxRow key={item._id} item={item} type={item._type} index={i} />)
+                })()}
+              </Card>
+
+              <Card>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <CardTitle>To buy summary</CardTitle>
+                  <button onClick={() => navigate('/tobuy')} className="nav-link-btn"
+                    style={{ fontSize: 12, color: '#f97316', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 10px', borderRadius: 8, transition: 'all 0.15s' }}>
+                    View all →
+                  </button>
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+                  {[
+                    { label: 'Pending', key: 'not ordered', color: '#f59e0b', bg: '#fffbeb' },
+                    { label: 'Ordered', key: 'ordered', color: '#3b82f6', bg: '#eff6ff' },
+                    { label: 'Done', key: 'done', color: '#10b981', bg: '#f0fdf4' },
+                  ].map(s => (
+                    <div key={s.key} className="stat-badge"
+                      style={{ flex: 1, background: s.bg, borderRadius: 12, padding: '12px 10px', textAlign: 'center', border: `1px solid ${s.color}20` }}>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{d.toBuyCount?.[s.key] || 0}</div>
+                      <div style={{ fontSize: 11, color: s.color, fontWeight: 600, marginTop: 2 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Savings rate</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#6366f1' }}>{d.savingsRate || 0}%</span>
+                  </div>
+                  <div style={{ height: 8, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
+                    <AnimatedBar pct={Math.min(d.savingsRate || 0, 100)} color="#6366f1" delay={400} />
+                  </div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 8 }}>
+                    {(d.savingsRate || 0) >= 20 ? '✅ Great savings rate!' : (d.savingsRate || 0) > 0 ? '💡 Aim for 20%+ savings' : '⚠️ No savings this period'}
+                  </div>
+                </div>
+                <div style={{
+                  marginTop: 14, borderRadius: 12, padding: '14px 16px',
+                  background: (d.netSavings || 0) >= 0 ? '#f0fdf4' : '#fef2f2',
+                  border: `1px solid ${(d.netSavings || 0) >= 0 ? '#bbf7d0' : '#fecaca'}`,
+                }}>
+                  <div style={{ fontSize: 11, color: (d.netSavings || 0) >= 0 ? '#15803d' : '#dc2626', fontWeight: 600, marginBottom: 4 }}>
+                    {(d.netSavings || 0) >= 0 ? 'NET SAVINGS THIS PERIOD' : 'OVERSPENT THIS PERIOD'}
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: (d.netSavings || 0) >= 0 ? '#15803d' : '#dc2626' }}>
+                    {(d.netSavings || 0) >= 0 ? '+' : '−'}₹{Math.abs(d.netSavings || 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }
