@@ -12,9 +12,14 @@ router.get('/', async (req, res) => {
         const now = new Date();
 
         // Use custom range or default to current month
-        const rangeStart = from_date ? new Date(from_date) : new Date(now.getFullYear(), now.getMonth(), 1);
-        const rangeEnd = to_date ? new Date(to_date) : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        const rangeStart = from_date
+            ? new Date(from_date + 'T00:00:00.000Z')
+            : new Date(now.getFullYear(), now.getMonth(), 1);
+        const rangeEnd = to_date
+            ? new Date(to_date + 'T23:59:59.999Z')
+            : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
+            
         // Always last 6 months for trend
         const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
