@@ -14,12 +14,12 @@ router.get('/', async (req, res) => {
         // Use custom range or default to current month
         const rangeStart = from_date
             ? new Date(from_date + 'T00:00:00.000Z')
-            : new Date(now.getFullYear(), now.getMonth(), 1);
-        const rangeEnd = to_date
-            ? new Date(to_date + 'T23:59:59.999Z')
-            : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+            : new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1))
 
-            
+        const rangeEnd = to_date
+            ? new Date(new Date(to_date + 'T00:00:00.000Z').getTime() + (24 * 60 * 60 * 1000) - 1)
+            : new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1) - 1)
+
         // Always last 6 months for trend
         const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
@@ -118,6 +118,7 @@ router.get('/', async (req, res) => {
                 savings: (inc?.total || 0) - (exp?.total || 0),
             };
         });
+        console.log('expenseSummary:', expenseSummary)
 
         res.status(200).json({
             success: true,

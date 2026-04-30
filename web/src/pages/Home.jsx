@@ -235,9 +235,9 @@ const Home = ({ user }) => {
   const navigate = useNavigate()
   const now = new Date()
 
-  const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
-  const defaultTo = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
-
+  const pad = (n) => String(n).padStart(2, '0')
+  const defaultFrom = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
+  const defaultTo = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate())}`
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [started, setStarted] = useState(false)
