@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import API from '../utils/api'
 import { useToast } from '../components/Toast'
+import DateRangeFilter, { calcLast30 } from '../components/DateRangeFilter'
 
 const Icon = ({ d, size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -10,22 +11,22 @@ const Icon = ({ d, size = 16 }) => (
 )
 
 const ICONS = {
-  plus:       'M12 5v14M5 12h14',
-  edit:       'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z',
-  trash:      'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6',
-  search:     'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0',
-  filter:     'M22 3H2l8 9.46V19l4 2v-8.54L22 3z',
-  check:      'M20 6L9 17l-5-5',
-  x:          'M18 6L6 18M6 6l12 12',
-  chevLeft:   'M15 18l-6-6 6-6',
-  chevRight:  'M9 18l6-6-6-6',
-  calendar:   'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
-  tag:        'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z M7 7h.01',
-  receipt:    'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',
-  arrowUp:    'M12 19V5M5 12l7-7 7 7',
-  arrowDown:  'M12 5v14M5 12l7 7 7-7',
-  empty:      'M9 17H7A5 5 0 017 7h1M15 7h1a5 5 0 010 10h-2M8 12h8',
-  rupee:      'M6 3h12M6 8h12M9 3v18M13 8l-4 13',
+  plus: 'M12 5v14M5 12h14',
+  edit: 'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z',
+  trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6',
+  search: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0',
+  filter: 'M22 3H2l8 9.46V19l4 2v-8.54L22 3z',
+  check: 'M20 6L9 17l-5-5',
+  x: 'M18 6L6 18M6 6l12 12',
+  chevLeft: 'M15 18l-6-6 6-6',
+  chevRight: 'M9 18l6-6-6-6',
+  calendar: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
+  tag: 'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z M7 7h.01',
+  receipt: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',
+  arrowUp: 'M12 19V5M5 12l7-7 7 7',
+  arrowDown: 'M12 5v14M5 12l7 7 7-7',
+  empty: 'M9 17H7A5 5 0 017 7h1M15 7h1a5 5 0 010 10h-2M8 12h8',
+  rupee: 'M6 3h12M6 8h12M9 3v18M13 8l-4 13',
 }
 
 /* ── Animated Modal ── */
@@ -123,7 +124,7 @@ const ExpenseModal = ({ open, onClose, onSave, item, categories }) => {
   }
 
   const focusStyle = e => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.1)' }
-  const blurStyle  = e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none' }
+  const blurStyle = e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none' }
 
   return (
     <AnimatedModal open={open} onClose={onClose}>
@@ -228,18 +229,20 @@ const ExpenseRow = ({ item, onEdit, onDelete, index }) => {
 const Expenses = ({ user }) => {
   const toast = useToast()
 
-  const [items, setItems]         = useState([])
+  const [items, setItems] = useState([])
   const [categories, setCategories] = useState([])
-  const [loading, setLoading]     = useState(true)
+  const [loading, setLoading] = useState(true)
   const [pagination, setPagination] = useState({ total: 0, offset: 0, limit: 20, hasNextPage: false, hasPrevPage: false })
 
-  const [search, setSearch]       = useState('')
-  const [fromDate, setFromDate]   = useState('')
-  const [toDate, setToDate]       = useState('')
+  const [search, setSearch] = useState('')
+  const _last30 = calcLast30()
+  const [fromDate, setFromDate] = useState(_last30.from)
+  const [toDate, setToDate] = useState(_last30.to)
   const [catFilter, setCatFilter] = useState('')
 
-  const [addOpen, setAddOpen]     = useState(false)
-  const [editItem, setEditItem]   = useState(null)
+  const [totals, setTotals] = useState({ total: 0, count: 0 })
+  const [addOpen, setAddOpen] = useState(false)
+  const [editItem, setEditItem] = useState(null)
   const [deleteItem, setDeleteItem] = useState(null)
 
   const searchTimer = useRef(null)
@@ -256,19 +259,22 @@ const Expenses = ({ user }) => {
     setLoading(true)
     try {
       const params = {
-        user_id:   user.user_id,
+        user_id: user.user_id,
         offset,
-        limit:     pagination.limit,
-        search:    overrides.search    ?? search,
-        from_date: overrides.fromDate  ?? fromDate,
-        to_date:   overrides.toDate    ?? toDate,
+        limit: pagination.limit,
+        search: overrides.search ?? search,
+        from_date: overrides.fromDate ?? fromDate,
+        to_date: overrides.toDate ?? toDate,
         expense_category_id: overrides.catFilter ?? catFilter,
       }
       // remove empty params
       Object.keys(params).forEach(k => !params[k] && delete params[k])
       const res = await API.get('/api/expenseList/list', { params })
+
       setItems(res.data?.expenses || [])
       setPagination(res.data?.pagination || {})
+      setTotals({ total: res.data?.totalAmount || 0, count: res.data?.pagination?.total || 0 })
+
     } catch {
       toast.error('Failed to load expenses.')
     } finally {
@@ -279,7 +285,7 @@ const Expenses = ({ user }) => {
   useEffect(() => {
     if (user?.user_id) {
       fetchCategories()
-      fetchList(0)
+      fetchList(0, { fromDate: _last30.from, toDate: _last30.to })
     }
   }, [user?.user_id])
 
@@ -293,8 +299,8 @@ const Expenses = ({ user }) => {
   const handleFilter = (key, val) => {
     const overrides = {}
     if (key === 'fromDate') { setFromDate(val); overrides.fromDate = val }
-    if (key === 'toDate')   { setToDate(val);   overrides.toDate   = val }
-    if (key === 'cat')      { setCatFilter(val); overrides.catFilter = val }
+    if (key === 'toDate') { setToDate(val); overrides.toDate = val }
+    if (key === 'cat') { setCatFilter(val); overrides.catFilter = val }
     fetchList(0, overrides)
   }
 
@@ -351,7 +357,7 @@ const Expenses = ({ user }) => {
       `}</style>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>Expenses</h1>
           <p style={{ color: '#64748b', fontSize: 14, marginTop: 4 }}>
@@ -359,6 +365,7 @@ const Expenses = ({ user }) => {
             {pagination.total > 0 && <span style={{ marginLeft: 8, background: '#fef2f2', color: '#ef4444', borderRadius: 20, fontSize: 12, fontWeight: 700, padding: '2px 10px' }}>{pagination.total} total</span>}
           </p>
         </div>
+
         <button onClick={() => setAddOpen(true)} style={{
           display: 'flex', alignItems: 'center', gap: 7, background: '#ef4444',
           color: '#fff', border: 'none', borderRadius: 12, padding: '10px 20px',
@@ -371,8 +378,8 @@ const Expenses = ({ user }) => {
         </button>
       </div>
 
-      {/* Filters */}
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      {/* Filters + Total */}
+      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: '14px 20px', marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         {/* Search */}
         <div style={{ flex: '1 1 200px', position: 'relative' }}>
           <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>
@@ -394,27 +401,43 @@ const Expenses = ({ user }) => {
           </select>
         </div>
 
-        {/* From date */}
-        <div style={{ flex: '0 1 150px' }}>
-          <input type="date" value={fromDate} onChange={e => handleFilter('fromDate', e.target.value)}
-            className="filter-input"
-            style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '9px 12px', fontSize: 13, color: fromDate ? '#1e293b' : '#94a3b8', outline: 'none', background: '#f8fafc', boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s' }} />
-        </div>
-
-        {/* To date */}
-        <div style={{ flex: '0 1 150px' }}>
-          <input type="date" value={toDate} onChange={e => handleFilter('toDate', e.target.value)}
-            className="filter-input"
-            style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '9px 12px', fontSize: 13, color: toDate ? '#1e293b' : '#94a3b8', outline: 'none', background: '#f8fafc', boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s' }} />
-        </div>
+        {/* Date range */}
+        <DateRangeFilter
+          fromDate={fromDate}
+          toDate={toDate}
+          onApply={(from, to) => {
+            setFromDate(from)
+            setToDate(to)
+            fetchList(0, { fromDate: from, toDate: to })
+          }}
+          accentColor="#4f46e5"
+        />
 
         {/* Clear */}
         {hasFilters && (
-          <button onClick={clearFilters} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '9px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s' }}
+          <button onClick={clearFilters}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '9px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s' }}
             onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
             onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}>
             <Icon d={ICONS.x} size={13} /> Clear
           </button>
+        )}
+
+        {/* Divider */}
+        {!loading && totals.total > 0 && (
+          <div style={{ width: 1, height: 32, background: '#e2e8f0', flexShrink: 0 }} />
+        )}
+
+        {/* Total */}
+        {!loading && totals.total > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+            <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              {hasFilters ? 'Total' : 'Total'}
+            </span>
+            <span style={{ fontSize: 16, fontWeight: 800, color: '#ef4444', letterSpacing: '-0.3px' }}>
+              −₹{totals.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </span>
+          </div>
         )}
       </div>
 

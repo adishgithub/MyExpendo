@@ -28,6 +28,7 @@ router.get('/', async (req, res) => {
             expenseByCategory, incomeByCategory,
             recentExpenses, recentIncomes,
             toBuySummary, monthlyExpenses, monthlyIncomes,
+            allTimeExpenses, allTimeIncome,  // ← add these
         ] = await Promise.all([
 
             ExpenseList.aggregate([
@@ -89,6 +90,17 @@ router.get('/', async (req, res) => {
                 { $group: { _id: { year: { $year: '$date' }, month: { $month: '$date' } }, total: { $sum: '$amount' } } },
                 { $sort: { '_id.year': 1, '_id.month': 1 } }
             ]),
+
+            // All-time net savings (bank balance)
+            ExpenseList.aggregate([
+                { $match: { user_id } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]),
+
+            IncomeList.aggregate([
+                { $match: { user_id } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]),
         ]);
 
         const totalExpenses = expenseSummary[0]?.total || 0;
@@ -118,7 +130,7 @@ router.get('/', async (req, res) => {
                 savings: (inc?.total || 0) - (exp?.total || 0),
             };
         });
-        console.log('expenseSummary:', expenseSummary)
+        const bankBalance = (allTimeIncome[0]?.total || 0) - (allTimeExpenses[0]?.total || 0)
 
         res.status(200).json({
             success: true,
@@ -127,6 +139,7 @@ router.get('/', async (req, res) => {
                 expenseByCategory, incomeByCategory,
                 recentExpenses, recentIncomes,
                 toBuyCount, monthlyTrend,
+                bankBalance,
             }
         });
 

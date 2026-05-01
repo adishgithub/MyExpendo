@@ -116,6 +116,7 @@ router.get('/list', async (req, res) => {
             {
                 $facet: {
                     total: [{ $count: 'count' }],
+                    totalAmount: [{ $group: { _id: null, sum: { $sum: '$amount' } } }],
                     expenses: [
                         { $skip: offset },
                         { $limit: limit },
@@ -127,11 +128,13 @@ router.get('/list', async (req, res) => {
         const [result] = await ExpenseList.aggregate(pipeline);
 
         const total = result.total[0]?.count || 0;
+        const totalAmount = result.totalAmount[0]?.sum || 0;
 
         res.status(200).json({
             success: true,
             message: 'Expenses fetched successfully',
             expenses: result.expenses,
+            totalAmount,
             pagination: {
                 total,
                 offset,

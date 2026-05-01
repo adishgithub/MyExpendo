@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import API from '../utils/api'
+import DateRangeFilter, { calcLast30 } from '../components/DateRangeFilter'
 
 const Icon = ({ d, size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -221,32 +222,20 @@ const CardTitle = ({ children }) => (
   <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 16 }}>{children}</div>
 )
 
-// Range presets
-const PRESETS = [
-  { label: 'This month', getValue: () => { const n = new Date(); return { from: new Date(n.getFullYear(), n.getMonth(), 1).toISOString().slice(0, 10), to: new Date(n.getFullYear(), n.getMonth() + 1, 0).toISOString().slice(0, 10) } } },
-  { label: 'Last month', getValue: () => { const n = new Date(); return { from: new Date(n.getFullYear(), n.getMonth() - 1, 1).toISOString().slice(0, 10), to: new Date(n.getFullYear(), n.getMonth(), 0).toISOString().slice(0, 10) } } },
-  { label: 'Last 3 months', getValue: () => { const n = new Date(); return { from: new Date(n.getFullYear(), n.getMonth() - 2, 1).toISOString().slice(0, 10), to: new Date(n.getFullYear(), n.getMonth() + 1, 0).toISOString().slice(0, 10) } } },
-  { label: 'This year', getValue: () => { const n = new Date(); return { from: `${n.getFullYear()}-01-01`, to: `${n.getFullYear()}-12-31` } } },
-  { label: 'Custom', getValue: () => null },
-]
-
 // Main Dashboard
 const Home = ({ user }) => {
   const navigate = useNavigate()
   const now = new Date()
 
-  const pad = (n) => String(n).padStart(2, '0')
-  const defaultFrom = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
-  const defaultTo = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate())}`
+  const last30 = calcLast30()
+
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [started, setStarted] = useState(false)
   const [activeTab, setActiveTab] = useState('expenses')
-  const [activePreset, setActivePreset] = useState(0)
-  const [fromDate, setFromDate] = useState(defaultFrom)
-  const [toDate, setToDate] = useState(defaultTo)
-  const [showCustom, setShowCustom] = useState(false)
-  const [filterOpen, setFilterOpen] = useState(false)
+  const [fromDate, setFromDate] = useState(last30.from)
+  const [toDate, setToDate] = useState(last30.to)
+  const [rangeLabel, setRangeLabel] = useState('Last 30 days')
 
   const fetchDashboard = async (from, to) => {
     if (!user?.user_id) return
@@ -267,11 +256,16 @@ const Home = ({ user }) => {
 
   useEffect(() => { fetchDashboard(fromDate, toDate) }, [user?.user_id])
 
-  const handlePreset = (index) => {
-    setActivePreset(index)
-    if (index === 4) { setShowCustom(true); return }
-    setShowCustom(false)
-    const { from, to } = PRESETS[index].getValue()
+  const handleDateApply = (from, to) => {
+    setFromDate(from)
+    setToDate(to)
+    fetchDashboard(from, to)
+  }
+
+  const handleMonthApply = () => {
+    const [y, m] = pickedMonth.split('-').map(Number)
+    const from = `${y}-${pad(m)}-01`
+    const to = `${y}-${pad(m)}-${pad(new Date(y, m, 0).getDate())}`
     setFromDate(from); setToDate(to)
     fetchDashboard(from, to)
     setFilterOpen(false)
@@ -288,9 +282,6 @@ const Home = ({ user }) => {
   const incMax = Math.max(...(d.incomeByCategory || []).map(c => c.total), 1)
   const catColors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6']
 
-  const rangeLabel = activePreset === 4
-    ? `${fromDate} → ${toDate}`
-    : PRESETS[activePreset]?.label
 
   return (
     <div style={{ maxWidth: 1200, fontFamily: "'DM Sans', sans-serif" }}>
@@ -314,79 +305,20 @@ const Home = ({ user }) => {
             Good {now.getHours() < 12 ? 'morning' : now.getHours() < 17 ? 'afternoon' : 'evening'}, {user?.full_name?.split(' ')[0] || user?.username} 👋
           </h1>
           <p style={{ color: '#64748b', fontSize: 14, marginTop: 4 }}>
-            Financial overview · <span style={{ color: '#6366f1', fontWeight: 600 }}>{rangeLabel}</span>
+            Financial overview · <span style={{ color: '#6366f1', fontWeight: 600 }}>{fromDate} → {toDate}</span>
           </p>
         </div>
 
         {/* Range filter */}
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setFilterOpen(o => !o)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 12,
-              padding: '9px 16px', fontSize: 13, fontWeight: 600, color: '#1e293b',
-              cursor: 'pointer', transition: 'all 0.15s',
-              boxShadow: filterOpen ? '0 0 0 3px rgba(99,102,241,0.15)' : 'none',
-              borderColor: filterOpen ? '#6366f1' : '#e2e8f0',
-            }}>
-            <Icon d={ICONS.calendar} size={15} />
-            {rangeLabel}
-            <Icon d={ICONS.chevDown} size={14} />
-          </button>
-
-          {filterOpen && (
-            <div className="filter-dropdown" style={{
-              position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 100,
-              background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16,
-              boxShadow: '0 16px 48px rgba(0,0,0,0.12)', padding: 16, minWidth: 240,
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', marginBottom: 10, textTransform: 'uppercase' }}>Quick select</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {PRESETS.map((p, i) => (
-                  <button key={p.label} className="preset-btn"
-                    onClick={() => handlePreset(i)}
-                    style={{
-                      padding: '9px 12px', borderRadius: 9, border: 'none', textAlign: 'left',
-                      fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                      background: activePreset === i ? '#eef2ff' : 'transparent',
-                      color: activePreset === i ? '#4f46e5' : '#1e293b',
-                      transition: 'all 0.15s',
-                    }}>
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-
-              {showCustom && (
-                <div style={{ marginTop: 14, borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', marginBottom: 10, textTransform: 'uppercase' }}>Custom range</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div>
-                      <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>From</label>
-                      <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
-                        style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', color: '#1e293b' }} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>To</label>
-                      <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
-                        style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box', color: '#1e293b' }} />
-                    </div>
-                    <button onClick={handleCustomApply}
-                      style={{ width: '100%', padding: '9px 0', borderRadius: 9, border: 'none', background: '#6366f1', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', marginTop: 4 }}>
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        <DateRangeFilter
+          fromDate={fromDate}
+          toDate={toDate}
+          onApply={handleDateApply}
+          accentColor="#6366f1"
+        />
       </div>
 
       {/* Click outside to close filter */}
-      {filterOpen && <div onClick={() => setFilterOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />}
-
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh', flexDirection: 'column', gap: 16 }}>
           <div style={{ width: 40, height: 40, border: '3px solid #e2e8f0', borderTop: '3px solid #6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
@@ -404,6 +336,15 @@ const Home = ({ user }) => {
               sub={d.netSavings < 0 ? '⚠️ Overspending!' : 'Keep it up!'} started={started} index={2} />
             <MetricCard label="To Buy Items" value={d.toBuyCount?.total || 0} color="#f97316" icon={ICONS.cart}
               prefix="" sub={`${d.toBuyCount?.['not ordered'] || 0} pending · ${d.toBuyCount?.ordered || 0} ordered`} started={started} index={3} />
+            <MetricCard
+              label="Bank Balance"
+              value={Math.abs(d.bankBalance || 0)}
+              color={d.bankBalance >= 0 ? '#6366f1' : '#ef4444'}
+              icon="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+              sub={d.bankBalance >= 0 ? 'All-time net savings' : '⚠️ All-time deficit'}
+              started={started}
+              index={4}
+            />
           </div>
 
           {/* Row 2 */}

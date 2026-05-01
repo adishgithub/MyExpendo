@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import API from '../utils/api'
 import { useToast } from '../components/Toast'
+import DateRangeFilter, { calcLast30 } from '../components/DateRangeFilter'
 
 const Icon = ({ d, size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -228,10 +229,12 @@ const Income = ({ user }) => {
   const [pagination, setPagination] = useState({ total: 0, offset: 0, limit: 20, hasNextPage: false, hasPrevPage: false })
 
   const [search, setSearch] = useState('')
-  const [fromDate, setFromDate] = useState('')
-  const [toDate, setToDate] = useState('')
+  const _last30 = calcLast30()
+  const [fromDate, setFromDate] = useState(_last30.from)
+  const [toDate, setToDate] = useState(_last30.to)
   const [catFilter, setCatFilter] = useState('')
 
+  const [totals, setTotals] = useState({ total: 0, count: 0 })
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [deleteItem, setDeleteItem] = useState(null)
@@ -262,6 +265,7 @@ const Income = ({ user }) => {
       const res = await API.get('/api/incomeList/list', { params })
       setItems(res.data?.incomes || [])
       setPagination(res.data?.pagination || {})
+      setTotals({ total: res.data?.totalAmount || 0, count: res.data?.pagination?.total || 0 })
     } catch {
       toast.error('Failed to load incomes.')
     } finally {
@@ -272,7 +276,7 @@ const Income = ({ user }) => {
   useEffect(() => {
     if (user?.user_id) {
       fetchCategories()
-      fetchList(0)
+      fetchList(0, { fromDate: _last30.from, toDate: _last30.to })
     }
   }, [user?.user_id])
 
@@ -343,7 +347,7 @@ const Income = ({ user }) => {
       `}</style>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>Income</h1>
           <p style={{ color: '#64748b', fontSize: 14, marginTop: 4 }}>
@@ -351,6 +355,7 @@ const Income = ({ user }) => {
             {pagination.total > 0 && <span style={{ marginLeft: 8, background: '#f0fdf4', color: '#10b981', borderRadius: 20, fontSize: 12, fontWeight: 700, padding: '2px 10px' }}>{pagination.total} total</span>}
           </p>
         </div>
+
         <button onClick={() => setAddOpen(true)} style={{
           display: 'flex', alignItems: 'center', gap: 7, background: '#10b981',
           color: '#fff', border: 'none', borderRadius: 12, padding: '10px 20px',
@@ -363,8 +368,9 @@ const Income = ({ user }) => {
         </button>
       </div>
 
-      {/* Filters */}
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      {/* Filters + Total */}
+      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: '14px 20px', marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Search */}
         <div style={{ flex: '1 1 200px', position: 'relative' }}>
           <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>
             <Icon d={ICONS.search} size={14} />
@@ -375,6 +381,7 @@ const Income = ({ user }) => {
             style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '9px 12px 9px 34px', fontSize: 13, color: '#1e293b', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'border-color 0.15s, box-shadow 0.15s' }} />
         </div>
 
+        {/* Category */}
         <div style={{ flex: '1 1 160px' }}>
           <select value={catFilter} onChange={e => handleFilter('cat', e.target.value)}
             className="filter-input-inc"
@@ -384,24 +391,43 @@ const Income = ({ user }) => {
           </select>
         </div>
 
-        <div style={{ flex: '0 1 150px' }}>
-          <input type="date" value={fromDate} onChange={e => handleFilter('fromDate', e.target.value)}
-            className="filter-input-inc"
-            style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '9px 12px', fontSize: 13, color: fromDate ? '#1e293b' : '#94a3b8', outline: 'none', background: '#f8fafc', boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s' }} />
-        </div>
+        {/* Date range */}
+        <DateRangeFilter
+          fromDate={fromDate}
+          toDate={toDate}
+          onApply={(from, to) => {
+            setFromDate(from)
+            setToDate(to)
+            fetchList(0, { fromDate: from, toDate: to })
+          }}
+          accentColor="#10b981"
+        />
 
-        <div style={{ flex: '0 1 150px' }}>
-          <input type="date" value={toDate} onChange={e => handleFilter('toDate', e.target.value)}
-            className="filter-input-inc"
-            style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '9px 12px', fontSize: 13, color: toDate ? '#1e293b' : '#94a3b8', outline: 'none', background: '#f8fafc', boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s' }} />
-        </div>
-
+        {/* Clear */}
         {hasFilters && (
-          <button onClick={clearFilters} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '9px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s' }}
+          <button onClick={clearFilters}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '9px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s' }}
             onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
             onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}>
             <Icon d={ICONS.x} size={13} /> Clear
           </button>
+        )}
+
+        {/* Divider */}
+        {!loading && totals.total > 0 && (
+          <div style={{ width: 1, height: 32, background: '#e2e8f0', flexShrink: 0 }} />
+        )}
+
+        {/* Total */}
+        {!loading && totals.total > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+            <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              {hasFilters ? 'Total' : 'Total'}
+            </span>
+            <span style={{ fontSize: 16, fontWeight: 800, color: '#10b981', letterSpacing: '-0.3px' }}>
+              +₹{totals.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </span>
+          </div>
         )}
       </div>
 
