@@ -43,8 +43,29 @@ router.get('/', async (req, res) => {
 
             ExpenseList.aggregate([
                 { $match: { user_id, date: { $gte: rangeStart, $lte: rangeEnd } } },
-                { $lookup: { from: 'expense_category_lists', localField: 'expense_category_id', foreignField: 'expense_category_id', as: 'cat' } },
-                { $addFields: { cat_name: { $ifNull: [{ $arrayElemAt: ['$cat.expense_category_name', 0] }, 'Uncategorised'] } } },
+                { $lookup: { from: 'expense_category_lists', localField: 'expense_category_id', foreignField: 'expense_category_id', as: 'expense_cat' } },
+                { $lookup: { from: 'product_category_lists', localField: 'expense_category_id', foreignField: 'product_category_id', as: 'product_cat' } },
+                { $lookup: { from: 'payment_category_lists', localField: 'expense_category_id', foreignField: 'payment_category_id', as: 'payment_cat' } },
+                {
+                    $addFields: {
+                        cat_name: {
+                            $ifNull: [
+                                { $arrayElemAt: ['$expense_cat.expense_category_name', 0] },
+                                {
+                                    $ifNull: [
+                                        { $arrayElemAt: ['$payment_cat.payment_category_name', 0] },
+                                        {
+                                            $ifNull: [
+                                                { $arrayElemAt: ['$product_cat.product_category_name', 0] },
+                                                'Uncategorised'
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                },
                 { $group: { _id: '$cat_name', total: { $sum: '$amount' } } },
                 { $sort: { total: -1 } }, { $limit: 6 }
             ]),
@@ -59,9 +80,30 @@ router.get('/', async (req, res) => {
 
             ExpenseList.aggregate([
                 { $match: { user_id, date: { $gte: rangeStart, $lte: rangeEnd } } },
-                { $lookup: { from: 'expense_category_lists', localField: 'expense_category_id', foreignField: 'expense_category_id', as: 'cat' } },
-                { $addFields: { expense_category_name: { $ifNull: [{ $arrayElemAt: ['$cat.expense_category_name', 0] }, 'Uncategorised'] } } },
-                { $project: { cat: 0, __v: 0 } },
+                { $lookup: { from: 'expense_category_lists', localField: 'expense_category_id', foreignField: 'expense_category_id', as: 'expense_cat' } },
+                { $lookup: { from: 'product_category_lists', localField: 'expense_category_id', foreignField: 'product_category_id', as: 'product_cat' } },
+                { $lookup: { from: 'payment_category_lists', localField: 'expense_category_id', foreignField: 'payment_category_id', as: 'payment_cat' } },
+                {
+                    $addFields: {
+                        expense_category_name: {
+                            $ifNull: [
+                                { $arrayElemAt: ['$expense_cat.expense_category_name', 0] },
+                                {
+                                    $ifNull: [
+                                        { $arrayElemAt: ['$payment_cat.payment_category_name', 0] },
+                                        {
+                                            $ifNull: [
+                                                { $arrayElemAt: ['$product_cat.product_category_name', 0] },
+                                                'Uncategorised'
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                },
+                { $project: { expense_cat: 0, product_cat: 0, payment_cat: 0, __v: 0 } },
                 { $sort: { date: -1 } }, { $limit: 5 }
             ]),
 

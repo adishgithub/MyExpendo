@@ -412,7 +412,7 @@ const CategoryPanel = ({ config, user }) => {
       </div>
 
       {/* List */}
-      <div style={{ padding: '16px 16px 0', flex: 1, minHeight: 80 }}>
+      <div style={{ padding: '16px 16px 0', flex: 1, minHeight: 300, maxHeight: 300, overflowY: 'auto' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: 13 }}>
             Loading…

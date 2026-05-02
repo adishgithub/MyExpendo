@@ -284,7 +284,7 @@ const Home = ({ user }) => {
 
 
   return (
-    <div style={{ maxWidth: 1200, fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ maxWidth: 2000, fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
         @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(4px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }

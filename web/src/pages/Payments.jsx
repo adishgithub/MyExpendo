@@ -271,43 +271,50 @@ const LoanModal = ({ open, onClose, user, loan, onSaved }) => {
                 </div>
             )}
 
-            {(form.contributors || []).map((c, i) => (
-                <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-                    <input
-                        {...focus}
-                        style={{ ...inputBase, flex: 1 }}
-                        placeholder="e.g. Adish, Suja, Brother"
-                        value={c.name}
-                        onChange={e => {
-                            const next = [...(form.contributors || [])]
-                            next[i] = { ...next[i], name: e.target.value }
-                            set('contributors', next)
-                        }}
-                    />
-                    {/* Toggle "this is me" */}
-                    <button
-                        title={c.user_id ? 'Marked as you — click to unmark' : 'Mark as you'}
-                        onClick={() => {
-                            const next = [...(form.contributors || [])]
-                            next[i] = { ...next[i], user_id: c.user_id ? undefined : user.user_id }
-                            set('contributors', next)
-                        }}
-                        style={{
-                            padding: '8px 10px', borderRadius: 8, border: '1.5px solid',
-                            borderColor: c.user_id ? '#4f46e5' : '#e2e8f0',
-                            background: c.user_id ? '#eef2ff' : '#fff',
-                            color: c.user_id ? '#4f46e5' : '#94a3b8',
-                            cursor: 'pointer', fontSize: 11, fontWeight: 700, flexShrink: 0,
-                        }}>
-                        {c.user_id ? 'Me ✓' : 'Me?'}
-                    </button>
-                    <button
-                        onClick={() => set('contributors', (form.contributors || []).filter((_, j) => j !== i))}
-                        style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #fee2e2', background: '#fff', color: '#ef4444', cursor: 'pointer' }}>
-                        <Icon d={IC.close} size={13} />
-                    </button>
-                </div>
-            ))}
+            <Field label="Contributors" hint="People who share payments on this loan">
+                {(form.contributors || []).map((c, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                        <input
+                            {...focus}
+                            style={{ ...inputBase, flex: 1 }}
+                            placeholder="e.g. Adish, Suja, Brother"
+                            value={c.name}
+                            onChange={e => {
+                                const next = [...(form.contributors || [])]
+                                next[i] = { ...next[i], name: e.target.value }
+                                set('contributors', next)
+                            }}
+                        />
+                        <button
+                            title={c.user_id ? 'Marked as you — click to unmark' : 'Mark as you'}
+                            onClick={() => {
+                                const next = [...(form.contributors || [])]
+                                next[i] = { ...next[i], user_id: c.user_id ? undefined : user.user_id }
+                                set('contributors', next)
+                            }}
+                            style={{
+                                padding: '8px 10px', borderRadius: 8, border: '1.5px solid',
+                                borderColor: c.user_id ? '#4f46e5' : '#e2e8f0',
+                                background: c.user_id ? '#eef2ff' : '#fff',
+                                color: c.user_id ? '#4f46e5' : '#94a3b8',
+                                cursor: 'pointer', fontSize: 11, fontWeight: 700, flexShrink: 0,
+                            }}>
+                            {c.user_id ? 'Me ✓' : 'Me?'}
+                        </button>
+                        <button
+                            onClick={() => set('contributors', (form.contributors || []).filter((_, j) => j !== i))}
+                            style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #fee2e2', background: '#fff', color: '#ef4444', cursor: 'pointer' }}>
+                            <Icon d={IC.close} size={13} />
+                        </button>
+                    </div>
+                ))}
+                <button
+                    onClick={() => set('contributors', [...(form.contributors || []), { name: '', user_id: undefined }])}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: '1.5px dashed #e2e8f0', borderRadius: 8, padding: '7px 12px', color: '#64748b', fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
+                    <Icon d={IC.plus} size={13} /> Add contributor
+                </button>
+            </Field>
+
             <Field label="Notes">
                 <textarea {...focus} rows={2} style={{ ...inputBase, resize: 'vertical', minHeight: 60 }}
                     placeholder="Optional notes about this loan…"
@@ -615,7 +622,7 @@ const LoanDetail = ({ loan, user, onBack, onRefresh }) => {
     const modeLabel = { auto_debit: 'Auto-debit', upi: 'UPI', netbanking: 'Net banking', cash: 'Cash', cheque: 'Cheque', other: 'Other' }
 
     return (
-        <div style={{ maxWidth: 900, fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ maxWidth: 2000, fontFamily: "'DM Sans', sans-serif" }}>
             <style>{`.tx-row:hover { background: #f8fafc !important; }`}</style>
 
             {/* Header */}
@@ -722,6 +729,15 @@ const LoanDetail = ({ loan, user, onBack, onRefresh }) => {
                                 )}
                             </div>
                         </div>
+                    )}
+
+                    {/* Projection */}
+                    {acc.status === 'active' && (
+                        <ProjectionCard
+                            loanId={acc.loan_id}
+                            userId={user.user_id}
+                            loanType={acc.loan_type}
+                        />
                     )}
 
                     {/* Progress + amortisation (fixed loans only) */}
@@ -852,7 +868,7 @@ const Payments = ({ user }) => {
     const catColors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#ec4899']
 
     return (
-        <div style={{ maxWidth: 1100, fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ maxWidth: 2000, fontFamily: "'DM Sans', sans-serif" }}>
             <style>{`
         .loan-card { transition: box-shadow 0.2s, transform 0.2s; cursor: pointer; }
         .loan-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important; transform: translateY(-2px); }
@@ -1010,6 +1026,191 @@ const Payments = ({ user }) => {
                 variant="danger" title="Delete this loan?"
                 message={`This will permanently delete "${deleteTarget?.loan_name}" and all ${deleteTarget?.payment_count || 0} payment records. This cannot be undone.`}
                 confirmLabel="Yes, delete" cancelLabel="Keep it" />
+        </div>
+    )
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PROJECTION CARD
+// ══════════════════════════════════════════════════════════════════════════════
+const CONFIDENCE_CONFIG = {
+    high: { color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0', label: 'High confidence' },
+    medium: { color: '#f59e0b', bg: '#fffbeb', border: '#fde68a', label: 'Medium confidence' },
+    low: { color: '#ef4444', bg: '#fef2f2', border: '#fecaca', label: 'Low confidence — need more payments' },
+}
+
+const ProjectionCard = ({ loanId, userId, loanType }) => {
+    const [data, setData] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+    const [expanded, setExpanded] = useState(false)
+
+    useEffect(() => {
+        if (!loanId || !userId) return
+        setLoading(true)
+        API.get(`/api/paymentProjection/${loanId}`, { params: { user_id: userId } })
+            .then(r => { setData(r.data); setLoading(false) })
+            .catch(e => { setError(e.response?.data?.message || 'Failed to load projection'); setLoading(false) })
+    }, [loanId, userId])
+
+    if (loading) return (
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '24px 20px', marginBottom: 20, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+            Calculating projection…
+        </div>
+    )
+
+    if (error || !data?.projection) return (
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '16px 20px', marginBottom: 20, fontSize: 13, color: '#94a3b8' }}>
+            {error || 'Not enough payment history to project yet.'}
+        </div>
+    )
+
+    const p = data.projection
+    const conf = CONFIDENCE_CONFIG[p.confidence] || CONFIDENCE_CONFIG.low
+    const projDate = new Date(p.projected_end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+    const nextDate = new Date(p.next_expected_payment_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    const catColors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#ec4899']
+
+    return (
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, marginBottom: 20, overflow: 'hidden' }}>
+
+            {/* ── Header ── */}
+            <div
+                onClick={() => setExpanded(v => !v)}
+                style={{ padding: '18px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: expanded ? '1px solid #f1f5f9' : 'none' }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Loan Projection</div>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: conf.bg, color: conf.color, border: `1px solid ${conf.border}` }}>
+                        {conf.label}
+                    </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 11, color: '#94a3b8' }}>Projected payoff</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981' }}>{projDate}</div>
+                    </div>
+                    <div style={{ color: '#94a3b8', transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>
+                        <Icon d={IC.chevron} size={16} />
+                    </div>
+                </div>
+            </div>
+
+            {expanded && (
+                <div style={{ padding: '20px' }}>
+
+                    {/* ── Top summary grid ── */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
+                        {[
+                            { label: 'Payments left', value: p.payments_remaining, suffix: ' payments', color: '#4f46e5' },
+                            { label: 'Months remaining', value: p.months_remaining, suffix: ' months', color: '#0f172a' },
+                            { label: 'Interest remaining', value: `₹${parseFloat(p.interest_remaining).toLocaleString('en-IN')}`, suffix: '', color: '#f59e0b' },
+                            { label: 'Total remaining', value: `₹${parseFloat(p.total_remaining).toLocaleString('en-IN')}`, suffix: '', color: '#ef4444' },
+                        ].map((s, i) => (
+                            <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px' }}>
+                                <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>{s.label}</div>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: s.color }}>{s.value}{s.suffix}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* ── Per-payment breakdown ── */}
+                    <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>Expected per payment</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                            {[
+                                { label: 'Total', value: fmt(p.avg_payment_amount), color: '#ef4444' },
+                                { label: 'Principal', value: fmt(p.avg_principal_per_payment), color: '#4f46e5' },
+                                { label: 'Interest', value: fmt(p.avg_interest_per_payment), color: '#f59e0b' },
+                            ].map((s, i) => (
+                                <div key={i}>
+                                    <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 2 }}>{s.label}</div>
+                                    <div style={{ fontSize: 14, fontWeight: 700, color: s.color }}>{s.value}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Split bar */}
+                        <div style={{ marginTop: 12 }}>
+                            <div style={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 4 }}>
+                                <div style={{ width: `${pct(p.avg_principal_per_payment, p.avg_payment_amount)}%`, background: '#4f46e5' }} />
+                                <div style={{ width: `${pct(p.avg_interest_per_payment, p.avg_payment_amount)}%`, background: '#f59e0b' }} />
+                            </div>
+                            <div style={{ display: 'flex', gap: 12, fontSize: 10, color: '#94a3b8' }}>
+                                <span><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: '#4f46e5', marginRight: 3 }} />Principal {pct(p.avg_principal_per_payment, p.avg_payment_amount)}%</span>
+                                <span><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: '#f59e0b', marginRight: 3 }} />Interest {pct(p.avg_interest_per_payment, p.avg_payment_amount)}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── Next payment + rate ── */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+                        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 14px' }}>
+                            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>Next expected payment</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#15803d' }}>{nextDate}</div>
+                            <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>every ~{p.avg_payment_interval_days} days</div>
+                        </div>
+                        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 14px' }}>
+                            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>Effective annual rate</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#d97706' }}>
+                                {p.effective_annual_rate > 0 ? `${p.effective_annual_rate.toFixed(2)}%` : '—'}
+                            </div>
+                            <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>p.a. weighted average</div>
+                        </div>
+                    </div>
+
+                    {/* ── Contributor projections ── */}
+                    {p.contributor_projections?.length > 0 && (
+                        <div style={{ marginBottom: 16 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>Contributor projections</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {p.contributor_projections.map((c, i) => (
+                                    <div key={c.name} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <div style={{ width: 26, height: 26, borderRadius: '50%', background: catColors[i % catColors.length] + '20', color: catColors[i % catColors.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800 }}>
+                                                    {c.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{c.name}</span>
+                                                {c.user_id && (
+                                                    <span style={{ fontSize: 10, background: '#eef2ff', color: '#4f46e5', borderRadius: 6, padding: '1px 6px', fontWeight: 600 }}>Me</span>
+                                                )}
+                                            </div>
+                                            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{c.share_pct}% share</span>
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 8 }}>
+                                            {[
+                                                { label: 'Paid so far', value: fmt(c.amount_paid_so_far), color: '#64748b' },
+                                                { label: 'Still to pay', value: fmt(c.remaining_amount), color: '#ef4444' },
+                                                { label: 'Per payment', value: fmt(c.per_payment_amount), color: '#4f46e5' },
+                                            ].map((s, j) => (
+                                                <div key={j}>
+                                                    <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 2 }}>{s.label}</div>
+                                                    <div style={{ fontSize: 12, fontWeight: 700, color: s.color }}>{s.value}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {/* Share bar */}
+                                        <div style={{ height: 4, background: '#e2e8f0', borderRadius: 2, overflow: 'hidden' }}>
+                                            <div style={{ height: '100%', width: `${c.share_pct}%`, background: catColors[i % catColors.length], borderRadius: 2 }} />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── Based on footer ── */}
+                    <div style={{ fontSize: 11, color: '#94a3b8', background: '#f8fafc', borderRadius: 8, padding: '8px 12px', lineHeight: 1.6 }}>
+                        Based on <strong style={{ color: '#64748b' }}>{p.based_on.payment_count} payments</strong> over{' '}
+                        <strong style={{ color: '#64748b' }}>{p.based_on.months_of_data} months</strong>.{' '}
+                        {p.confidence === 'low' && 'Add more payments to improve accuracy.'}
+                        {p.confidence === 'medium' && 'Accuracy improves after 6+ payments.'}
+                        {p.confidence === 'high' && 'Projection based on strong payment history.'}
+                    </div>
+
+                </div>
+            )}
         </div>
     )
 }
