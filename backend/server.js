@@ -36,6 +36,7 @@ const paymentCategoryRoutes = require('./routes/payment_category_routes');
 const paymentAccountRoutes = require('./routes/payment_account_routes');
 const paymentTransactionRoutes = require('./routes/payment_transaction_routes');
 const paymentProjectionRoutes = require('./routes/payment_projection_routes');
+const calendarRoutes = require('./routes/calendar_routes');
 
 // Use routes
 app.get('/', (req, res) => res.send('MyExpendo API is running ✅'));
@@ -52,6 +53,7 @@ app.use('/api/paymentCategory', paymentCategoryRoutes);
 app.use('/api/paymentAccount', paymentAccountRoutes);
 app.use('/api/paymentTransaction', paymentTransactionRoutes);
 app.use('/api/paymentProjection', paymentProjectionRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // Connect to MongoDB then start server
 mongoose.connect(MONGODB_URI)

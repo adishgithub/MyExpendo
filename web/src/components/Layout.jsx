@@ -33,7 +33,7 @@ const ICONS = {
   check: 'M20 6L9 17l-5-5',
 }
 
-const BUILT_ROUTES = ['/', '/account', '/categories', '/expenses', '/income', '/tobuy', '/payments']
+const BUILT_ROUTES = ['/', '/account', '/categories', '/expenses', '/income', '/tobuy', '/payments', '/calendar']
 
 const TOOLS_NAV = [
   { label: 'Calendar', icon: ICONS.calendar, to: '/calendar' },
