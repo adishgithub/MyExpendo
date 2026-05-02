@@ -57,6 +57,14 @@ export const PRESETS = [
   { label: 'Custom range', getValue: () => null },
 ]
 
+export const calcThisMonth = () => {
+  const n = new Date()
+  return {
+    from: `${n.getFullYear()}-${pad(n.getMonth() + 1)}-01`,
+    to: `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(new Date(n.getFullYear(), n.getMonth() + 1, 0).getDate())}`,
+  }
+}
+
 export const calcLast30 = () => {
   const to = new Date()
   const from = new Date(); from.setDate(to.getDate() - 29)
@@ -74,7 +82,7 @@ export const calcLast30 = () => {
 const DateRangeFilter = ({ fromDate, toDate, onApply, accentColor = '#6366f1' }) => {
   const now = new Date()
   const [filterOpen, setFilterOpen] = useState(false)
-  const [activePreset, setActivePreset] = useState(0)
+  const [activePreset, setActivePreset] = useState(1)
   const [showCustom, setShowCustom] = useState(false)
   const [showMonthPicker, setShowMonthPicker] = useState(false)
   const [localFrom, setLocalFrom] = useState(fromDate)

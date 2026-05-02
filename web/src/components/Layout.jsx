@@ -36,12 +36,12 @@ const BUILT_ROUTES = ['/', '/account', '/categories', '/expenses', '/income', '/
 
 const TOOLS_NAV = [
   { label: 'Calendar', icon: ICONS.calendar, to: '/calendar' },
-  { label: 'Budgets', icon: ICONS.budgets, to: '/budgets' },
-  { label: 'Reports', icon: ICONS.reports, to: '/reports' },
+  // { label: 'Budgets', icon: ICONS.budgets, to: '/budgets' },
+  // { label: 'Reports', icon: ICONS.reports, to: '/reports' },
 ]
 const BOTTOM_NAV = [
-  { label: 'Settings', icon: ICONS.settings, to: '/settings' },
-  { label: 'Help', icon: ICONS.help, to: '/help' },
+  // { label: 'Settings', icon: ICONS.settings, to: '/settings' },
+  // { label: 'Help', icon: ICONS.help, to: '/help' },
 ]
 
 const APP_VERSION = '1.0.0'
@@ -301,7 +301,7 @@ export const Sidebar = ({ collapsed, user, onLogout }) => {
     { label: 'To Buy List', icon: ICONS.tobuy, to: '/tobuy', badge: toBuyCount },
     { label: 'Payments / EMI', icon: ICONS.payments, to: '/payments' },
     { label: 'Categories', icon: ICONS.categories, to: '/categories' },
-    { label: 'Analytics', icon: ICONS.analytics, to: '/analytics' },
+    // { label: 'Analytics', icon: ICONS.analytics, to: '/analytics' },
   ]
 
   const handleNavClick = (item, e) => {
@@ -373,18 +373,12 @@ export const Sidebar = ({ collapsed, user, onLogout }) => {
           justifyContent: collapsed ? 'center' : 'flex-start',
           borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: 6,
         }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 9,
-            background: 'linear-gradient(135deg,#6366f1,#818cf8)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
+          <div style={{ width: 34, height: 34, flexShrink: 0 }}>
+            <img src="/src/assets/icon.svg" alt="My Expendo" style={{ width: 34, height: 34, borderRadius: 9 }} />
           </div>
           {!collapsed && (
             <span style={{ color: '#fff', fontWeight: 800, fontSize: 16, letterSpacing: '-0.3px' }}>
-              My Expendo!
+              My Expendo !
             </span>
           )}
         </div>

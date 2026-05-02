@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import API from '../utils/api'
-import DateRangeFilter, { calcLast30 } from '../components/DateRangeFilter'
+import DateRangeFilter, { calcThisMonth } from '../components/DateRangeFilter'
 
 const Icon = ({ d, size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -227,14 +227,14 @@ const Home = ({ user }) => {
   const navigate = useNavigate()
   const now = new Date()
 
-  const last30 = calcLast30()
+  const thisMonth = calcThisMonth()
 
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [started, setStarted] = useState(false)
   const [activeTab, setActiveTab] = useState('expenses')
-  const [fromDate, setFromDate] = useState(last30.from)
-  const [toDate, setToDate] = useState(last30.to)
+  const [fromDate, setFromDate] = useState(thisMonth.from)
+  const [toDate, setToDate] = useState(thisMonth.to)
   const [rangeLabel, setRangeLabel] = useState('Last 30 days')
 
   const fetchDashboard = async (from, to) => {
@@ -254,7 +254,10 @@ const Home = ({ user }) => {
     }
   }
 
-  useEffect(() => { fetchDashboard(fromDate, toDate) }, [user?.user_id])
+  useEffect(() => {
+    const tm = calcThisMonth()
+    fetchDashboard(tm.from, tm.to)
+  }, [user?.user_id])
 
   const handleDateApply = (from, to) => {
     setFromDate(from)
