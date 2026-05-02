@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-
 const { v4: uuidv4 } = require('uuid');
 
 // Import models
 const ProductCategoryList = require('../models/product_category_list');
+const ExpenseCategoryList = require('../models/expense_category_list');
 
 // Create Product Category API
 router.post('/create', async (req, res) => {
@@ -28,6 +28,16 @@ router.post('/create', async (req, res) => {
             product_category_name,
             user_id: user_id
         });
+
+        // Also create linked expense category for this product category
+        await ExpenseCategoryList.create({
+            expense_category_id: uuidv4(),
+            expense_category_name: product_category_name,
+            user_id,
+            source: 'product',
+            source_id: newProductCategory.product_category_id,
+        })
+
         return res.status(201).json({ success: true, message: 'Product category created successfully', productCategory: newProductCategory });
     } catch (error) {
         console.error('Create Product Category error:', error);
@@ -79,7 +89,7 @@ router.put('/update', async (req, res) => {
         }
 
         // Find the product category by ID
-        const productCategory = await ProductCategoryList.findById(product_category_id);
+        const productCategory = await ProductCategoryList.findOne({ product_category_id })
         if (!productCategory) {
             return res.status(404).json({ success: false, message: 'Product category not found' });
         }
@@ -87,6 +97,12 @@ router.put('/update', async (req, res) => {
         // Update the product category
         productCategory.product_category_name = product_category_name;
         await productCategory.save();
+
+        // Sync name to linked expense category
+        await ExpenseCategoryList.findOneAndUpdate(
+            { source_id: productCategory.product_category_id },
+            { expense_category_name: product_category_name }
+        )
 
         return res.status(200).json({ success: true, message: 'Product category updated successfully', productCategory });
     } catch (error) {
@@ -100,13 +116,14 @@ router.delete('/delete', async (req, res) => {
     const { user_id, product_category_id } = req.body;
     try {
         // Find the product category by ID
-        const productCategory = await ProductCategoryList.findById(product_category_id);
+        const productCategory = await ProductCategoryList.findOne({ product_category_id })
         if (!productCategory) {
             return res.status(404).json({ success: false, message: 'Product category not found' });
         }
-
+        // Remove linked expense category
+        await ExpenseCategoryList.findOneAndDelete({ source_id: productCategory.product_category_id })
         // Delete the product category
-        await ProductCategoryList.findByIdAndDelete(product_category_id);
+        await ProductCategoryList.findOneAndDelete({ product_category_id })
         return res.status(200).json({ success: true, message: 'Product category deleted successfully' });
 
     } catch (error) {

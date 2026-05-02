@@ -200,7 +200,7 @@ router.put('/update', async (req, res) => {
 
         // ── Sync to expense list when status is set to "Done" ──────────
         // Guard: only create expense if one hasn't been created for this item yet
-        if (status && status.toLowerCase() === 'done') {
+        if (status && status.toLowerCase() === 'ordered' ) {
             const existingExpense = await ExpenseList.findOne({ source_item_id: item_id });
 
             if (!existingExpense) {

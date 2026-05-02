@@ -246,13 +246,14 @@ const EditModal = ({ open, item, nameField, label, color, accent, onClose, onSav
   )
 }
 
-/* ─── single category chip ─── */
 const CategoryChip = ({ item, nameField, color, accent, lightBg, border, onEdit, onDelete, animDelay }) => {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), animDelay)
     return () => clearTimeout(t)
   }, [animDelay])
+
+  const isLocked = item.source && item.source !== 'manual'
 
   return (
     <div
@@ -273,30 +274,43 @@ const CategoryChip = ({ item, nameField, color, accent, lightBg, border, onEdit,
       <span style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: '#1e293b' }}>
         {item[nameField]}
       </span>
-      <button
-        onClick={() => onEdit(item)}
-        title="Rename"
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer', padding: 5, borderRadius: 7,
-          color: '#94a3b8', display: 'flex', transition: 'color 0.15s, background 0.15s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.color = accent; e.currentTarget.style.background = '#fff' }}
-        onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'none' }}
-      >
-        <Icon d={ICONS.edit} size={14} />
-      </button>
-      <button
-        onClick={() => onDelete(item)}
-        title="Delete"
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer', padding: 5, borderRadius: 7,
-          color: '#94a3b8', display: 'flex', transition: 'color 0.15s, background 0.15s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2' }}
-        onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'none' }}
-      >
-        <Icon d={ICONS.trash} size={14} />
-      </button>
+
+      {isLocked ? (
+        <span style={{
+          fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
+          background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0',
+          whiteSpace: 'nowrap',
+        }}>
+          🔒 from {item.source}
+        </span>
+      ) : (
+        <>
+          <button
+            onClick={() => onEdit(item)}
+            title="Rename"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 5, borderRadius: 7,
+              color: '#94a3b8', display: 'flex', transition: 'color 0.15s, background 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = accent; e.currentTarget.style.background = '#fff' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'none' }}
+          >
+            <Icon d={ICONS.edit} size={14} />
+          </button>
+          <button
+            onClick={() => onDelete(item)}
+            title="Delete"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 5, borderRadius: 7,
+              color: '#94a3b8', display: 'flex', transition: 'color 0.15s, background 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'none' }}
+          >
+            <Icon d={ICONS.trash} size={14} />
+          </button>
+        </>
+      )}
     </div>
   )
 }
@@ -350,9 +364,9 @@ const CategoryPanel = ({ config, user }) => {
   const handleEdit = async (name) => {
     try {
       await API.put(`${apiBase}/update`, {
-        [idField]: editItem._id || editItem[idField],
+        [idField]: editItem[idField] || editItem._id,  // ← same fix
         [nameField]: name,
-        user_id: user.user_id    // ← this must be present
+        user_id: user.user_id
       })
       toast.success(`Renamed to "${name}".`, label)
       setEditItem(null)
@@ -365,7 +379,7 @@ const CategoryPanel = ({ config, user }) => {
   const handleDelete = async () => {
     try {
       await API.delete(`${apiBase}/delete`, {
-        data: { [idField]: deleteItem._id || deleteItem[idField], user_id: user.user_id }
+        data: { [idField]: deleteItem[idField] || deleteItem._id, user_id: user.user_id }
       })
       toast.success(`"${deleteItem[nameField]}" deleted.`, label)
       setDeleteItem(null)

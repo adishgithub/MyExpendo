@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 
 // Import models
 const ServiceCategoryList = require('../models/service_category_list');
+const ExpenseCategoryList = require('../models/expense_category_list');
 
 // Create Service Category API
 router.post('/create', async (req, res) => {
@@ -28,6 +29,16 @@ router.post('/create', async (req, res) => {
             service_category_name,
             user_id: user_id
         });
+
+        // Also create linked expense category for this service category
+        await ExpenseCategoryList.create({
+            expense_category_id: uuidv4(),
+            expense_category_name: service_category_name,
+            user_id,
+            source: 'service',
+            source_id: newServiceCategory.service_category_id,
+        })
+
         return res.status(201).json({ success: true, message: 'Service category created successfully', serviceCategory: newServiceCategory });
     } catch (error) {
         console.error('Create Service Category error:', error);
@@ -80,7 +91,7 @@ router.put('/update', async (req, res) => {
         }
 
         // Find the service category by ID
-        const serviceCategory = await ServiceCategoryList.findById(service_category_id);
+        const serviceCategory = await ServiceCategoryList.findOne({ service_category_id })
         if (!serviceCategory) {
             return res.status(404).json({ success: false, message: 'Service category not found' });
         }
@@ -88,6 +99,12 @@ router.put('/update', async (req, res) => {
         // Update the service category
         serviceCategory.service_category_name = service_category_name;
         await serviceCategory.save();
+
+        // Sync name to linked expense category
+        await ExpenseCategoryList.findOneAndUpdate(
+            { source_id: serviceCategory.service_category_id },
+            { expense_category_name: service_category_name }
+        )
 
         return res.status(200).json({ success: true, message: 'Service category updated successfully', serviceCategory });
     } catch (error) {
@@ -101,13 +118,14 @@ router.delete('/delete', async (req, res) => {
     const { service_category_id } = req.body;
     try {
         // Find the service category by ID
-        const serviceCategory = await ServiceCategoryList.findById(service_category_id);
+        const serviceCategory = await ServiceCategoryList.findOne({ service_category_id })
         if (!serviceCategory) {
             return res.status(404).json({ success: false, message: 'Service category not found' });
         }
-
+        // Remove linked expense category
+        await ExpenseCategoryList.findOneAndDelete({ source_id: serviceCategory.service_category_id })
         // Delete the service category
-        await ServiceCategoryList.findByIdAndDelete(service_category_id);
+        await ServiceCategoryList.findOneAndDelete({ service_category_id })
         return res.status(200).json({ success: true, message: 'Service category deleted successfully' });
 
     } catch (error) {

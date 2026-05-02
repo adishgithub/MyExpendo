@@ -26,7 +26,7 @@ router.post('/create', async (req, res) => {
         const newExpenseCategory = await ExpenseCategoryList.create({
             expense_category_id: uuidv4(),
             expense_category_name,
-            user_id : user_id
+            user_id: user_id
         });
         return res.status(201).json({ success: true, message: 'Expense category created successfully', expenseCategory: newExpenseCategory });
     } catch (error) {
@@ -78,9 +78,15 @@ router.put('/update', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Expense category name already exists' })
         }
 
-        const expenseCategory = await ExpenseCategoryList.findById(expense_category_id);
+        const expenseCategory = await ExpenseCategoryList.findOne({ expense_category_id });
         if (!expenseCategory) {
             return res.status(404).json({ success: false, message: 'Expense category not found' })
+        }
+        if (expenseCategory.source && expenseCategory.source !== 'manual') {
+            return res.status(403).json({
+                success: false,
+                message: `This category is managed by ${expenseCategory.source} categories and cannot be edited here.`
+            })
         }
 
         expenseCategory.expense_category_name = expense_category_name
@@ -97,13 +103,21 @@ router.delete('/delete', async (req, res) => {
     const { expense_category_id } = req.body;
     try {
         // Find the expense category by ID
-        const expenseCategory = await ExpenseCategoryList.findById(expense_category_id);
+        const expenseCategory = await ExpenseCategoryList.findOne({ expense_category_id })
         if (!expenseCategory) {
             return res.status(404).json({ success: false, message: 'Expense category not found' });
         }
 
+        // Prevent deletion if category is linked to a source category
+        if (expenseCategory.source && expenseCategory.source !== 'manual') {
+            return res.status(403).json({
+                success: false,
+                message: `This category is managed by ${expenseCategory.source} categories and cannot be deleted here.`
+            })
+        }
+
         // Delete the expense category
-        await ExpenseCategoryList.findByIdAndDelete(expense_category_id);
+        await ExpenseCategoryList.findOneAndDelete({ expense_category_id })
         return res.status(200).json({ success: true, message: 'Expense category deleted successfully' });
 
     } catch (error) {

@@ -10,10 +10,19 @@ const expenseCategorySchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        user_id : {
+        user_id: {
             type: String,
             ref: 'user_login_list',
             required: true,
+        },
+        source: {
+            type: String,
+            enum: ['manual', 'product', 'service', 'payment'],
+            default: 'manual',
+        },
+        source_id: {
+            type: String,
+            required: false,
         },
     }
 );
