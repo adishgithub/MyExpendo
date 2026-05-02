@@ -2,6 +2,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import API from './utils/api'
+import expendoLogo from './assets/icon.svg'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -94,7 +95,7 @@ function App() {
 
         {/* Logo with spinning rings */}
         <img
-          src="/src/assets/icon.svg"
+          src={expendoLogo}
           alt="My Expendo"
           style={{ width: 80, height: 80, borderRadius: 20, display: 'block' }}
         />

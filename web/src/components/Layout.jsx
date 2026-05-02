@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import API from '../utils/api'
+import expendoLogo from '../assets/icon.svg'
 import { useToast } from './Toast'
 import Modal from './Modal'
 
@@ -374,8 +375,11 @@ export const Sidebar = ({ collapsed, user, onLogout }) => {
           borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: 6,
         }}>
           <div style={{ width: 34, height: 34, flexShrink: 0 }}>
-            <img src="/src/assets/icon.svg" alt="My Expendo" style={{ width: 34, height: 34, borderRadius: 9 }} />
-          </div>
+            <img
+              src={expendoLogo}
+              alt="My Expendo"
+              style={{ width: 34, height: 34, borderRadius: 9 }}
+            />          </div>
           {!collapsed && (
             <span style={{ color: '#fff', fontWeight: 800, fontSize: 16, letterSpacing: '-0.3px' }}>
               My Expendo !
