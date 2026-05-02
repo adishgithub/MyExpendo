@@ -11,7 +11,7 @@ import Expenses from './pages/Expenses'
 import Income from './pages/Income'
 import ToBuyList from './pages/ToBuyList'
 import Home from './pages/Home'
-
+import Payments from './pages/Payments'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -89,6 +89,7 @@ function App() {
         <Route path="/expenses" element={<Protected><Expenses user={user} /></Protected>} />
         <Route path="/income" element={<Protected><Income user={user} /></Protected>} />
         <Route path="/tobuy" element={<Protected><ToBuyList user={user} /></Protected>} />
+        <Route path="/payments" element={<Protected><Payments  user={user} /></Protected>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

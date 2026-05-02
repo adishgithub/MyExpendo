@@ -83,6 +83,20 @@ const CATEGORY_CONFIG = [
     idField: 'service_category_id',
     nameField: 'service_category_name',
   },
+  {
+    key: 'payment',
+    label: 'Payment Categories',
+    description: 'Classify loans, cards & payment types',
+    icon: ICONS.tag,
+    color: '#ec4899',
+    lightBg: '#fdf2f8',
+    border: '#fbcfe8',
+    accent: '#db2777',
+    apiBase: '/api/paymentCategory',
+    responseKey: 'paymentCategories',
+    idField: 'payment_category_id',
+    nameField: 'payment_category_name',
+  },
 ]
 
 /* ─── animated overlay modal ─── */
@@ -299,25 +313,25 @@ const CategoryPanel = ({ config, user }) => {
   const [deleteItem, setDeleteItem] = useState(null)
   const [addOpen, setAddOpen] = useState(false)
 
-const fetchList = useCallback(async () => {
+  const fetchList = useCallback(async () => {
     setLoading(true)
     try {
-        const res = await API.get(`${apiBase}/list`, {
-            params: { user_id: user?.user_id }
-        })
-        const raw = res.data?.[responseKey] || []
-        setItems(Array.isArray(raw) ? raw : [])
+      const res = await API.get(`${apiBase}/list`, {
+        params: { user_id: user?.user_id }
+      })
+      const raw = res.data?.[responseKey] || []
+      setItems(Array.isArray(raw) ? raw : [])
     } catch {
-        // remove toast from here to avoid dependency issue
-        console.error('Could not load categories.')
+      // remove toast from here to avoid dependency issue
+      console.error('Could not load categories.')
     } finally {
-        setLoading(false)
+      setLoading(false)
     }
-}, [apiBase, responseKey, user?.user_id])  // ← only these 3, nothing else
+  }, [apiBase, responseKey, user?.user_id])  // ← only these 3, nothing else
 
-useEffect(() => {
+  useEffect(() => {
     if (user?.user_id) fetchList()
-}, [user?.user_id, apiBase, responseKey])  // ← no fetchList here
+  }, [user?.user_id, apiBase, responseKey])  // ← no fetchList here
 
   const handleAdd = async (name) => {
     try {

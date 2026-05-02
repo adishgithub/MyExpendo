@@ -71,6 +71,18 @@ const paymentAccountSchema = new mongoose.Schema(
             min: 1,
             max: 31,
         },
+        contributors: [
+            {
+                name: {
+                    type: String,
+                    required: true
+                },  // e.g. "Adish", "Suja", "Brother"
+                user_id: {
+                    type: String,
+                    required: false
+                },
+            }
+        ],
 
         // ── Status ────────────────────────────────────────────────────
         status: {

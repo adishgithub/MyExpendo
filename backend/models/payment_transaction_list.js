@@ -93,6 +93,22 @@ const paymentTransactionSchema = new mongoose.Schema(
             type: String,
             required: false,               // e.g. "Paid at branch", "May 2026 EMI"
         },
+        contributor_splits: [
+            {
+                name: {
+                    type: String,
+                    required: true
+                },  // Must match a name in parent loan's contributors[]
+                amount: {
+                    type: Number,
+                    required: true
+                },   // e.g. 10000
+                user_id: {
+                    type: String,
+                    required: false
+                },
+            }
+        ],
 
         // ── Expense sync link ─────────────────────────────────────────
         // Set after the corresponding expense_list record is created.

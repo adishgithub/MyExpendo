@@ -32,6 +32,9 @@ const incomeListRoutes = require('./routes/income_routes');
 const expenseListRoutes = require('./routes/expense_routes');
 const toBuyRoutes = require('./routes/to_buy_routes');
 const dashboardRoutes = require('./routes/dashboard');
+const paymentCategoryRoutes = require('./routes/payment_category_routes');
+const paymentAccountRoutes = require('./routes/payment_account_routes');
+const paymentTransactionRoutes = require('./routes/payment_transaction_routes');
 
 // Use routes
 app.get('/', (req, res) => res.send('MyExpendo API is running ✅'));
@@ -44,6 +47,9 @@ app.use('/api/incomeList', incomeListRoutes);
 app.use('/api/expenseList', expenseListRoutes);
 app.use('/api/toBuyList', toBuyRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/paymentCategory', paymentCategoryRoutes);
+app.use('/api/paymentAccount', paymentAccountRoutes);
+app.use('/api/paymentTransaction', paymentTransactionRoutes);
 
 // Connect to MongoDB then start server
 mongoose.connect(MONGODB_URI)

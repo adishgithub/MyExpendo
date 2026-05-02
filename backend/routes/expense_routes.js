@@ -83,21 +83,37 @@ router.get('/list', async (req, res) => {
                 }
             },
 
-            // Use expense category name if found, otherwise fall back to product category name
+            // After the existing product_category lookup, add:
+            {
+                $lookup: {
+                    from: 'payment_category_lists',
+                    localField: 'expense_category_id',
+                    foreignField: 'payment_category_id',
+                    as: 'payment_category',
+                }
+            },
+
+            // Then replace the $addFields block with:
             {
                 $addFields: {
                     expense_category_name: {
                         $cond: {
                             if: { $gt: [{ $size: '$expense_category' }, 0] },
                             then: { $arrayElemAt: ['$expense_category.expense_category_name', 0] },
-                            else: { $arrayElemAt: ['$product_category.product_category_name', 0] },
+                            else: {
+                                $cond: {
+                                    if: { $gt: [{ $size: '$payment_category' }, 0] },
+                                    then: { $arrayElemAt: ['$payment_category.payment_category_name', 0] },
+                                    else: { $arrayElemAt: ['$product_category.product_category_name', 0] },
+                                }
+                            }
                         }
                     }
                 }
             },
 
-            // Remove the raw joined arrays
-            { $project: { expense_category: 0, product_category: 0, __v: 0 } },
+            // And add payment_category to the $project exclusion:
+            { $project: { expense_category: 0, product_category: 0, payment_category: 0, __v: 0 } },
 
             // Search across description, category name, amount
             ...(search ? [{
