@@ -119,4 +119,31 @@ router.put('/update', async (req, res) => {
     }
 });
 
+// Change Password API
+router.put('/change-password', protect, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    try {
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, message: 'All fields are required' });
+        }
+        if (newPassword.length < 8) {
+            return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
+        }
+
+        const user = await UserLoginList.findById(req.user._id);
+        const isMatch = await user.matchPassword(currentPassword);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+        }
+
+        user.password = newPassword; // pre-save hook will hash it
+        await user.save();
+
+        return res.status(200).json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Change password error:', error);
+        return res.status(500).json({ success: false, message: 'Error updating password' });
+    }
+});
+
 module.exports = router;

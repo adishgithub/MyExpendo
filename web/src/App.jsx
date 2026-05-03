@@ -14,6 +14,7 @@ import ToBuyList from './pages/ToBuyList'
 import Home from './pages/Home'
 import Payments from './pages/Payments'
 import Calendar from './pages/Calendar'
+import Settings from './pages/Settings'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -149,6 +150,7 @@ function App() {
         <Route path="/income" element={<Protected><Income user={user} /></Protected>} />
         <Route path="/tobuy" element={<Protected><ToBuyList user={user} /></Protected>} />
         <Route path="/payments" element={<Protected><Payments user={user} /></Protected>} />
+        <Route path="/settings" element={<Protected><Settings user={user} /></Protected>} />
         <Route path="/calendar" element={<Protected><Calendar user={user} /></Protected>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

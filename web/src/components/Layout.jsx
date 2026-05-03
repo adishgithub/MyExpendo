@@ -33,7 +33,7 @@ const ICONS = {
   check: 'M20 6L9 17l-5-5',
 }
 
-const BUILT_ROUTES = ['/', '/account', '/categories', '/expenses', '/income', '/tobuy', '/payments', '/calendar']
+const BUILT_ROUTES = ['/', '/account', '/categories', '/expenses', '/income', '/tobuy', '/payments', '/calendar', '/settings']
 
 const TOOLS_NAV = [
   { label: 'Calendar', icon: ICONS.calendar, to: '/calendar' },
@@ -41,8 +41,8 @@ const TOOLS_NAV = [
   // { label: 'Reports', icon: ICONS.reports, to: '/reports' },
 ]
 const BOTTOM_NAV = [
-  // { label: 'Settings', icon: ICONS.settings, to: '/settings' },
-  // { label: 'Help', icon: ICONS.help, to: '/help' },
+  { label: 'Settings', icon: ICONS.settings, to: '/settings' },
+  { label: 'Help', icon: ICONS.help, to: '/help' },
 ]
 
 const APP_VERSION = '1.0.0'
