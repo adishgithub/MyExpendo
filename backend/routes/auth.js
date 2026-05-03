@@ -24,6 +24,11 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Username already exists' });
         }
 
+        const existingEmail = await UserLoginList.findOne({ email });
+        if (existingEmail) {
+            return res.status(400).json({ success: false, message: 'Email already registered' });
+        }
+
         // Create new user
         const newUser = await UserLoginList.create({
             user_id: uuidv4(),
@@ -37,6 +42,11 @@ router.post('/register', async (req, res) => {
 
         return res.status(201).json({ success: true, message: 'User registered successfully', user: newUser, token });
     } catch (error) {
+        // ✅ Also add a safety net for any other duplicate key errors
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern)[0];
+            return res.status(400).json({ success: false, message: `${field} already in use` });
+        }
         console.error('Registration error:', error);
         return res.status(500).json({ success: false, message: 'Error occurred during registration', error: error.message });
     }
@@ -80,9 +90,9 @@ router.put('/update', async (req, res) => {
     try {
         // Check username taken by someone ELSE
         if (username) {
-            const existingUsername = await UserLoginList.findOne({ 
-                username, 
-                _id: { $ne: _id } 
+            const existingUsername = await UserLoginList.findOne({
+                username,
+                _id: { $ne: _id }
             });
             if (existingUsername) {
                 return res.status(400).json({ success: false, message: 'Username already taken' });
@@ -91,9 +101,9 @@ router.put('/update', async (req, res) => {
 
         // Check email taken by someone ELSE
         if (email) {
-            const existingEmail = await UserLoginList.findOne({ 
-                email, 
-                _id: { $ne: _id } 
+            const existingEmail = await UserLoginList.findOne({
+                email,
+                _id: { $ne: _id }
             });
             if (existingEmail) {
                 return res.status(400).json({ success: false, message: 'Email already in use' });
@@ -107,10 +117,10 @@ router.put('/update', async (req, res) => {
             { new: true, runValidators: true }
         );
 
-        return res.status(200).json({ 
-            success: true, 
-            message: 'User details updated successfully', 
-            user: updatedUser 
+        return res.status(200).json({
+            success: true,
+            message: 'User details updated successfully',
+            user: updatedUser
         });
 
     } catch (error) {
