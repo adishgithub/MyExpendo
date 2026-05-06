@@ -45,7 +45,7 @@ const BOTTOM_NAV = [
   { label: 'Help', icon: ICONS.help, to: '/help' },
 ]
 
-const APP_VERSION = '1.0.0'
+const APP_VERSION = '1.0.1'
 
 const Avatar = ({ name = '', size = 36 }) => {
   const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -285,10 +285,12 @@ export const Sidebar = ({ collapsed, user, onLogout }) => {
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [toBuyCount, setToBuyCount] = useState(null)
 
+  // In Sidebar, replace the useEffect that fetches toBuyCount:
+
   useEffect(() => {
     if (!user?.user_id) return
     API.get('/api/toBuyList/list', {
-      params: { user_id: user.user_id, limit: 1, offset: 0 }
+      params: { user_id: user.user_id, limit: 1, offset: 0, status: 'not ordered' }
     })
       .then(res => setToBuyCount(res.data?.pagination?.total || null))
       .catch(() => { })

@@ -85,34 +85,33 @@ const generateToken = (id) => {
 };
 
 // UPDATE USER DETAILS API
-router.put('/update', async (req, res) => {
-    const { username, full_name, email, phone, _id } = req.body;
+router.put('/update', protect, async (req, res) => {
+    const { username, full_name, email, phone } = req.body;
+    const userId = req.user._id; // ✅ trusted source, not req.body
+
     try {
-        // Check username taken by someone ELSE
         if (username) {
             const existingUsername = await UserLoginList.findOne({
                 username,
-                _id: { $ne: _id }
+                _id: { $ne: userId }
             });
             if (existingUsername) {
                 return res.status(400).json({ success: false, message: 'Username already taken' });
             }
         }
 
-        // Check email taken by someone ELSE
         if (email) {
             const existingEmail = await UserLoginList.findOne({
                 email,
-                _id: { $ne: _id }
+                _id: { $ne: userId }
             });
             if (existingEmail) {
                 return res.status(400).json({ success: false, message: 'Email already in use' });
             }
         }
 
-        // Update user details
         const updatedUser = await UserLoginList.findByIdAndUpdate(
-            _id,
+            userId,
             { username, full_name, email, phone },
             { new: true, runValidators: true }
         );
@@ -124,6 +123,10 @@ router.put('/update', async (req, res) => {
         });
 
     } catch (error) {
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern)[0];
+            return res.status(400).json({ success: false, message: `${field} already in use` });
+        }
         console.error('Update error:', error);
         return res.status(500).json({ success: false, message: 'Error occurred during user update', error: error.message });
     }

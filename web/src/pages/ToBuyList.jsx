@@ -33,6 +33,13 @@ const STATUS_STYLE = {
   'done': { bg: '#dcfce7', color: '#16a34a', label: 'Done' },
 }
 
+// Filter tab definitions — "all" tab shows everything
+const FILTER_TABS = [
+  { key: 'not ordered', label: 'Not Ordered' },
+  { key: 'ordered', label: 'Ordered' },
+  { key: 'done', label: 'Done' },
+]
+
 const getStatusStyle = (status = '') => STATUS_STYLE[status.toLowerCase()] || STATUS_STYLE['not ordered']
 
 const fmt = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })
@@ -164,7 +171,6 @@ const AddModal = ({ open, onClose, onSave, categories }) => {
           onFocus={focusStyle} onBlur={blurStyle} style={inputBase} />
       </Field>
 
-      {/* ── Added Date (user-controlled) ── */}
       <Field label="Added Date">
         <input type="date" value={form.added_date} onChange={e => set('added_date', e.target.value)}
           onFocus={focusStyle} onBlur={blurStyle} style={inputBase} />
@@ -213,6 +219,7 @@ const EditModal = ({ open, onClose, onSave, item, categories }) => {
   }
 
   const isDone = form.status?.toLowerCase() === 'done'
+  const isOrdered = form.status?.toLowerCase() === 'ordered'
 
   return (
     <AnimatedModal open={open} onClose={onClose}>
@@ -273,10 +280,17 @@ const EditModal = ({ open, onClose, onSave, item, categories }) => {
         </Field>
       )}
 
+      {isOrdered && (
+        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon d={ICONS.cart} size={14} />
+          Marking as Ordered will add this to your expenses. Changing to Done will update the existing expense.
+        </div>
+      )}
+
       {isDone && (
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#15803d', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Icon d={ICONS.check} size={14} />
-          Marking as Done will automatically add this to your expenses (once only).
+          Marking as Done will update the existing expense entry (no duplicate).
         </div>
       )}
 
@@ -336,7 +350,6 @@ const InlineStatusSelect = ({ item, onChange, loading }) => {
 
   return (
     <>
-      {/* Trigger pill */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <button
           ref={triggerRef}
@@ -360,7 +373,6 @@ const InlineStatusSelect = ({ item, onChange, loading }) => {
           </svg>
         </button>
       </div>
-      {/* Portal dropdown — renders at body level, no z-index fights */}
       {open && createPortal(
         <div
           ref={dropRef}
@@ -482,7 +494,6 @@ const SummaryCards = ({ summary }) => {
               <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{c.sub}</div>
             </div>
           </div>
-          {/* Progress bar only on the Items Bought card */}
           {c.progress !== null && (
             <div style={{ height: 5, borderRadius: 99, background: '#e2e8f0', overflow: 'hidden' }}>
               <div style={{
@@ -495,6 +506,57 @@ const SummaryCards = ({ summary }) => {
           )}
         </div>
       ))}
+    </div>
+  )
+}
+
+/* ── Status Filter Tabs ── */
+const StatusFilterTabs = ({ activeTab, onTabChange, counts }) => {
+  return (
+    <div style={{
+      display: 'flex', gap: 6, alignItems: 'center',
+      background: '#f1f5f9', borderRadius: 12, padding: 4,
+    }}>
+      {FILTER_TABS.map(tab => {
+        const isActive = activeTab === tab.key
+        const count = counts[tab.key] ?? 0
+        const style = tab.key !== 'all' ? STATUS_STYLE[tab.key] : null
+
+        return (
+          <button
+            key={tab.key}
+            onClick={() => onTabChange(tab.key)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '7px 14px', borderRadius: 9, border: 'none',
+              fontSize: 13, fontWeight: isActive ? 700 : 500,
+              cursor: 'pointer', transition: 'all 0.18s',
+              background: isActive
+                ? (style ? style.bg : '#fff')
+                : 'transparent',
+              color: isActive
+                ? (style ? style.color : '#0f172a')
+                : '#64748b',
+              boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+            }}
+          >
+            {tab.label}
+            <span style={{
+              background: isActive
+                ? (style ? `${style.color}20` : '#e2e8f0')
+                : '#e2e8f0',
+              color: isActive
+                ? (style ? style.color : '#475569')
+                : '#94a3b8',
+              borderRadius: 99, fontSize: 11, fontWeight: 700,
+              padding: '1px 7px', minWidth: 20, textAlign: 'center',
+              transition: 'all 0.18s',
+            }}>
+              {count}
+            </span>
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -581,6 +643,10 @@ const ToBuyList = ({ user }) => {
   const [statusLoading, setStatusLoading] = useState(null)
 
   const [search, setSearch] = useState('')
+  // ── Active status filter tab — 'all' | 'not ordered' | 'ordered' | 'done'
+  const [activeTab, setActiveTab] = useState('not ordered')  // ── Per-status counts for the tab badges (fetched alongside the list)
+  const [statusCounts, setStatusCounts] = useState({ 'not ordered': 0, ordered: 0, done: 0 })
+
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [deleteItem, setDeleteItem] = useState(null)
@@ -603,18 +669,26 @@ const ToBuyList = ({ user }) => {
         offset,
         limit: pagination.limit,
         search: overrides.search ?? search,
+        // Send status filter only when not "all"
+        status: overrides.status !== undefined
+          ? overrides.status
+          : activeTab,
       }
       Object.keys(params).forEach(k => (params[k] === '' || params[k] === undefined) && delete params[k])
       const res = await API.get('/api/toBuyList/list', { params })
       setItems(res.data?.items || [])
       setSummary(res.data?.summary || { totalExpected: 0, totalActual: 0, saved: 0 })
       setPagination(res.data?.pagination || {})
+      // Update tab counts if backend returns them
+      if (res.data?.statusCounts) {
+        setStatusCounts(res.data.statusCounts)
+      }
     } catch {
       toast.error('Failed to load buy list.')
     } finally {
       setLoading(false)
     }
-  }, [user?.user_id, search, pagination.limit])
+  }, [user?.user_id, search, activeTab, pagination.limit])
 
   useEffect(() => {
     if (user?.user_id) {
@@ -622,6 +696,12 @@ const ToBuyList = ({ user }) => {
       fetchList(0)
     }
   }, [user?.user_id])
+
+  // Re-fetch when active tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    fetchList(0, { status: tab })
+  }
 
   const handleSearch = (val) => {
     setSearch(val)
@@ -675,13 +755,13 @@ const ToBuyList = ({ user }) => {
     }
   }
 
-  // ── Inline status change — sets bought_date automatically if Done ──
+  // ── Inline status change — auto-switches active tab to match new status ──
   const handleStatusChange = async (item, newStatus) => {
     setStatusLoading(item.item_id)
     const prevStatus = item.status
     const boughtDate = newStatus === 'done' ? new Date().toISOString().slice(0, 10) : undefined
 
-    // Optimistic update
+    // Optimistic update in the current list
     setItems(prev => prev.map(i =>
       i.item_id === item.item_id
         ? { ...i, status: newStatus, ...(boughtDate ? { bought_date: boughtDate } : {}) }
@@ -694,11 +774,16 @@ const ToBuyList = ({ user }) => {
         status: newStatus,
         ...(boughtDate ? { bought_date: boughtDate } : {}),
       })
-      if (newStatus === 'done') {
-        toast.success('Marked as Done and added to expenses.', 'Done')
+
+      if (newStatus === 'ordered') {
+        toast.success('Marked as Ordered and added to expenses.', 'Ordered')
+      } else if (newStatus === 'done') {
+        toast.success('Marked as Done — expense updated.', 'Done')
       }
-      // Refresh to get updated summary totals
-      fetchList(pagination.offset)
+
+      // Switch the active tab to the item's new status and refresh
+      setActiveTab(newStatus)
+      fetchList(0, { status: newStatus })
     } catch {
       setItems(prev => prev.map(i => i.item_id === item.item_id ? { ...i, status: prevStatus } : i))
       toast.error('Failed to update status.')
@@ -750,14 +835,25 @@ const ToBuyList = ({ user }) => {
       {/* Summary Cards */}
       <SummaryCards summary={summary} />
 
-      {/* Filters */}
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center' }}>
-        <div style={{ flex: 1, position: 'relative' }}>
+      {/* Filters row — tabs + search */}
+      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: '14px 20px', marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        {/* Status filter tabs */}
+        <StatusFilterTabs
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          counts={statusCounts}
+        />
+
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Search */}
+        <div style={{ position: 'relative', minWidth: 720 }}>
           <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>
             <Icon d={ICONS.search} size={14} />
           </span>
           <input value={search} onChange={e => handleSearch(e.target.value)}
-            placeholder="Search item name, category, price…"
+            placeholder="Search items…"
             className="filter-input-buy"
             style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '9px 12px 9px 34px', fontSize: 13, color: '#1e293b', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'border-color 0.15s, box-shadow 0.15s' }} />
         </div>
@@ -784,8 +880,12 @@ const ToBuyList = ({ user }) => {
         ) : items.length === 0 ? (
           <div style={{ padding: '56px 0', textAlign: 'center' }}>
             <div style={{ color: '#cbd5e1', marginBottom: 12 }}><Icon d={ICONS.cart} size={40} /></div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8' }}>{search ? 'No results match your search' : 'Your buy list is empty'}</div>
-            <div style={{ fontSize: 13, color: '#cbd5e1', marginTop: 4 }}>{search ? 'Try a different search term' : 'Add the first item you want to buy'}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8' }}>
+              {search ? 'No results match your search' : activeTab !== 'all' ? `No items with status "${STATUS_STYLE[activeTab]?.label}"` : 'Your buy list is empty'}
+            </div>
+            <div style={{ fontSize: 13, color: '#cbd5e1', marginTop: 4 }}>
+              {search ? 'Try a different search term' : activeTab !== 'all' ? 'Switch to a different tab or add new items' : 'Add the first item you want to buy'}
+            </div>
           </div>
         ) : (
           items.map((item, i) => (
