@@ -420,8 +420,12 @@ const InlineStatusSelect = ({ item, onChange, loading }) => {
 }
 
 /* ── Priority Badge ── */
-const PriorityBadge = ({ value, onIncrement, loading }) => (
+const PriorityBadge = ({ value, onIncrement, onDecrement, loading }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+    <button onClick={onDecrement} disabled={loading || value <= 1} title="Decrease priority" className="priority-dec-btn"
+      style={{ width: 22, height: 22, borderRadius: 6, border: '1.5px solid #e2e8f0', background: '#f8fafc', color: '#94a3b8', cursor: (loading || value <= 1) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, transition: 'all 0.15s', flexShrink: 0, opacity: value <= 1 ? 0.4 : 1 }}>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14" /></svg>
+    </button>
     <span style={{
       background: value >= 5 ? '#fff7ed' : '#f8fafc',
       color: value >= 5 ? '#f97316' : '#64748b',
@@ -562,15 +566,14 @@ const StatusFilterTabs = ({ activeTab, onTabChange, counts }) => {
 }
 
 /* ── Row ── */
-const ToBuyRow = ({ item, onEdit, onDelete, onIncrementPriority, onStatusChange, priorityLoading, statusLoading, index }) => {
+const ToBuyRow = ({ item, onEdit, onDelete, onIncrementPriority, onDecrementPriority, onStatusChange, priorityLoading, statusLoading, index }) => {
   const [visible, setVisible] = useState(false)
   useEffect(() => { const t = setTimeout(() => setVisible(true), index * 35); return () => clearTimeout(t) }, [index])
 
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: '1.4fr 90px 160px 120px 120px 130px 110px 70px',
-      alignItems: 'center', gap: 12,
+      gridTemplateColumns: '1.4fr 110px 160px 120px 120px 130px 110px 70px', alignItems: 'center', gap: 12,
       padding: '12px 20px', borderBottom: '1px solid #f1f5f9',
       opacity: visible ? 1 : 0, transform: visible ? 'translateX(0)' : 'translateX(-12px)',
       transition: 'opacity 0.3s ease, transform 0.3s ease',
@@ -592,7 +595,7 @@ const ToBuyRow = ({ item, onEdit, onDelete, onIncrementPriority, onStatusChange,
       </div>
 
       {/* Priority */}
-      <PriorityBadge value={item.priority_point || 1} onIncrement={() => onIncrementPriority(item)} loading={priorityLoading === item.item_id} />
+      <PriorityBadge value={item.priority_point || 1} onIncrement={() => onIncrementPriority(item)} onDecrement={() => onDecrementPriority(item)} loading={priorityLoading === item.item_id} />
 
       {/* Inline status dropdown */}
       <InlineStatusSelect item={item} onChange={onStatusChange} loading={statusLoading === item.item_id} />
@@ -755,6 +758,21 @@ const ToBuyList = ({ user }) => {
     }
   }
 
+  const handleDecrementPriority = async (item) => {
+    if ((item.priority_point || 1) <= 1) return
+    setPriorityLoading(item.item_id)
+    const newVal = (item.priority_point || 1) - 1
+    setItems(prev => prev.map(i => i.item_id === item.item_id ? { ...i, priority_point: newVal } : i))
+    try {
+      await API.put('/api/toBuyList/update', { item_id: item.item_id, priority_point: newVal })
+    } catch {
+      setItems(prev => prev.map(i => i.item_id === item.item_id ? { ...i, priority_point: item.priority_point } : i))
+      toast.error('Failed to update priority.')
+    } finally {
+      setPriorityLoading(null)
+    }
+  }
+
   // ── Inline status change — auto-switches active tab to match new status ──
   const handleStatusChange = async (item, newStatus) => {
     setStatusLoading(item.item_id)
@@ -804,6 +822,7 @@ const ToBuyList = ({ user }) => {
         .filter-input-buy:focus       { border-color: ${ACCENT} !important; box-shadow: 0 0 0 3px rgba(249,115,22,0.08) !important; }
         .page-btn-buy:hover:not(:disabled) { background: ${ACCENT} !important; color: #fff !important; border-color: ${ACCENT} !important; }
         .priority-inc-btn:hover       { background: #fff7ed !important; color: ${ACCENT} !important; border-color: #fed7aa !important; }
+        .priority-dec-btn:hover:not(:disabled) { background: #f8fafc !important; color: #64748b !important; border-color: #cbd5e1 !important; }
         .inline-status-select:focus   { box-shadow: 0 0 0 3px rgba(249,115,22,0.12) !important; }
       `}</style>
 
@@ -869,7 +888,7 @@ const ToBuyList = ({ user }) => {
       {/* Table */}
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         {/* Table header */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 90px 160px 120px 120px 130px 110px 70px', gap: 12, padding: '12px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 110px 160px 120px 120px 130px 110px 70px', gap: 12, padding: '12px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
           {['Item / Category', 'Priority', 'Status', 'Expected', 'Actual', 'Added On', 'Bought On', 'Actions'].map((h, i) => (
             <span key={h} style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: i === 0 ? 'left' : 'center' }}>{h}</span>
           ))}
@@ -896,6 +915,7 @@ const ToBuyList = ({ user }) => {
               onEdit={setEditItem}
               onDelete={setDeleteItem}
               onIncrementPriority={handleIncrementPriority}
+              onDecrementPriority={handleDecrementPriority}
               onStatusChange={handleStatusChange}
               priorityLoading={priorityLoading}
               statusLoading={statusLoading}

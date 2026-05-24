@@ -118,7 +118,7 @@ const QuickAddExpenseModal = ({ open, onClose, user }) => {
   useEffect(() => {
     if (open && user?.user_id) {
       setForm({ expense_category_id: '', amount: '', date: new Date().toISOString().slice(0, 10), description: '' })
-      API.get('/api/expenseCategory/list', { params: { user_id: user.user_id } })
+      API.get('/api/expenseCategory/dropdown', { params: { user_id: user.user_id } })
         .then(res => setCategories(res.data?.expenseCategories || []))
         .catch(() => { })
     }
@@ -203,7 +203,7 @@ const QuickAddIncomeModal = ({ open, onClose, user }) => {
   useEffect(() => {
     if (open && user?.user_id) {
       setForm({ income_category_id: '', amount: '', date: new Date().toISOString().slice(0, 10), description: '' })
-      API.get('/api/incomeCategory/list', { params: { user_id: user.user_id } })
+      API.get('/api/incomeCategory/dropdown', { params: { user_id: user.user_id } })
         .then(res => setCategories(res.data?.incomeCategories || []))
         .catch(() => { })
     }

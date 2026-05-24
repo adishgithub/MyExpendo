@@ -57,7 +57,7 @@ router.get('/dropdown', async (req, res) => {
         if (!user_id) {
             return res.status(400).json({ success: false, message: 'user_id is required' });
         }
-        const expenseCategories = await ExpenseCategoryList.find({ user_id }).select('expense_category_id, expense_category_name');
+        const expenseCategories = await ExpenseCategoryList.find({ user_id }).select('expense_category_id expense_category_name');
         return res.status(200).json({ success: true, message: 'Dropdown expense categories fetched successfully', expenseCategories });
     } catch (error) {
         console.error('Get Dropdown Expense Categories error:', error);

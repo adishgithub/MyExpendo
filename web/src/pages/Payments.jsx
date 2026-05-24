@@ -277,7 +277,7 @@ const LoanModal = ({ open, onClose, user, loan, onSaved }) => {
                         <input
                             {...focus}
                             style={{ ...inputBase, flex: 1 }}
-                            placeholder="e.g. Adish, Suja, Brother"
+                            placeholder="e.g. Alice, Bob"
                             value={c.name}
                             onChange={e => {
                                 const next = [...(form.contributors || [])]
