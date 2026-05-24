@@ -53,7 +53,7 @@ router.get('/list', async (req, res) => {
 // Get Dropdown Income Categories API
 router.get('/dropdown', async (req, res) => {
     try {
-            const { user_id } = req.query;
+        const { user_id } = req.query;
         if (!user_id) {
             return res.status(400).json({ success: false, message: 'user_id is required' });
         }
@@ -73,12 +73,13 @@ router.put('/update', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Income category name is required' })
         }
 
-        const existingCategory = await IncomeCategoryList.findOne({ income_category_name, user_id });  // ← fixed casing
+        const existingCategory = await IncomeCategoryList.findOne({ income_category_name, user_id });
         if (existingCategory) {
             return res.status(400).json({ success: false, message: 'Income category name already exists' })
         }
 
-        const incomeCategory = await IncomeCategoryList.findById(income_category_id)
+        // ✅ search by the custom UUID field, not _id
+        const incomeCategory = await IncomeCategoryList.findOne({ income_category_id, user_id })
         if (!incomeCategory) {
             return res.status(404).json({ success: false, message: 'Income category not found' })
         }
@@ -90,24 +91,20 @@ router.put('/update', async (req, res) => {
     } catch (error) {
         return res.status(500).json({ success: false, message: 'Error updating income category', error: error.message })
     }
-})
+});
 
 // Delete Income Category API
 router.delete('/delete', async (req, res) => {
     const { user_id, income_category_id } = req.body;
     try {
-        // Find the income category by ID
-        const incomeCategory = await IncomeCategoryList.findById(income_category_id);
+        // ✅ search and delete by the custom UUID field
+        const incomeCategory = await IncomeCategoryList.findOneAndDelete({ income_category_id, user_id });
         if (!incomeCategory) {
             return res.status(404).json({ success: false, message: 'Income category not found' });
         }
 
-        // Delete the income category
-        await IncomeCategoryList.findByIdAndDelete(income_category_id);
         return res.status(200).json({ success: true, message: 'Income category deleted successfully' });
-
     } catch (error) {
-        console.error('Delete Income Category error:', error);
         return res.status(500).json({ success: false, message: 'Error occurred while deleting income category', error: error.message });
     }
 });
